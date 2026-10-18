@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist2/
+bin/
+scanner-rs/target/
+*.log
+.omc/
+.impeccable/

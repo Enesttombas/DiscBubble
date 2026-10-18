@@ -1,0 +1,22 @@
+{
+  "name": "disk-bubble",
+  "version": "1.0.0",
+  "description": "Windows disk space visualizer with animated bubble (circle packing) view, cleanup suggestions and driver store analysis",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-packager . DiskBubble --platform=win32 --arch=x64 --out=dist --overwrite --prune=true --asar.unpackDir=bin --ignore=\"^/(dist|scanner-rs|server.log|Disk-Bubble.cmd|server.js)\"",
+    "test": "node --check main.js && node --check scanner.js && node --check preload.js && node --check public/app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "d3-hierarchy": "^3.1.2"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.3.0",
+    "electron": "^44.9.0"
+  }
+}

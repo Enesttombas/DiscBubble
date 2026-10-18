@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Disk Bubble</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><i></i>Disk Bubble</div>
+  <div id="drives"></div>
+  <div class="spacer"></div>
+  <button id="sugBtn" hidden>Suggested deletions</button>
+  <div id="stats"></div>
+</header>
+<main>
+  <aside id="side">
+    <div id="tabs" class="seg"><button class="on" data-t="dirs" onclick="setTab('dirs')">Folders</button><button data-t="big" onclick="setTab('big')">Largest</button><button data-t="sug" onclick="setTab('sug')">Suggestions</button><button data-t="drv" onclick="setTab('drv')">Drivers</button></div>
+    <h3 id="sideTitle">Start</h3><div id="tools"></div><ul id="list"></ul>
+    <div id="selbar"><span id="selInfo"></span><button onclick="doRemove([...sel],'trash')">Move to Recycle Bin</button><button class="danger" onclick="doRemove([...sel],'remove')">Delete permanently</button></div>
+  </aside>
+  <section id="stage">
+    <canvas id="cv"></canvas>
+    <div id="crumbs"></div>
+    <div id="mode" class="seg"><button class="on" data-m="safe" onclick="setMode('safe')">Safety</button><button data-m="type" onclick="setMode('type')">Type</button><button data-m="grp" onclick="setMode('grp')">Importance</button></div>
+    <div id="legend"></div>
+    <div id="key"></div>
+    <div id="tip"></div>
+    <div id="scan" class="hidden">
+      <div id="orbWrap"><canvas id="orbCv"></canvas><canvas id="lensCv" aria-hidden="true"></canvas></div>
+      <div id="scanNum">0</div>
+      <div id="scanSub">files</div>
+      <div id="sbar"><i></i></div>
+      <div id="smeta"><span id="sPct"></span><span id="sSpd"></span><span id="sTime"></span></div>
+      <div id="scanPath"></div>
+    </div>
+    <div id="picker" class="hidden"></div>
+    <div id="menu"></div>
+    <div id="toast"></div>
+    <div id="sugdlg"><div class="card sdcard" role="dialog" aria-modal="true">
+      <div class="sdhead"><div><h4>Suggested deletions</h4><p id="sdSub"></p></div><button id="sdClose" class="sdx" aria-label="Close">✕</button></div>
+      <ul id="sdList"></ul>
+      <div class="sdfoot"><span id="sdInfo"></span>
+        <button id="sdSafe">Select safe</button><button id="sdAll">Select all</button><button id="sdNone">Clear</button>
+        <span class="sdgap"></span><button id="sdDel" class="danger" disabled>Delete permanently</button></div>
+    </div></div>
+    <div id="modal"><div class="card" role="alertdialog" aria-modal="true">
+      <div class="mi">!</div>
+      <h4 id="mTitle">Delete permanently?</h4>
+      <p id="mName"></p><small id="mPath"></small>
+      <p class="mn" id="mNote">This item will not go to the Recycle Bin and cannot be restored.</p>
+      <div class="mb"><button id="mNo">Cancel</button><button id="mYes" class="danger">Delete permanently</button></div>
+    </div></div>
+    <div id="empty"><b>Pick a drive</b><span>Files appear as bubbles sized by how much space they take</span></div>
+  </section>
+</main>
+<script src="d3-hierarchy.js"></script>
+<script src="lens.js"></script>
+<script src="orb.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
