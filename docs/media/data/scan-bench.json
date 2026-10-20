@@ -1,0 +1,1 @@
+{"metrik":"scan time, 60,000 files (median of 7 runs, 1 warm-up)","node_scanner_ms":11510,"rust_walk_ms":124,"node_runs_ms":[9091,11510,12154,12099,10494,12035,11470],"rust_runs_ms":[121,132,130,126,120,124,121],"komut":"node bench/scan-bench.cjs 7 60000","rc":0,"tarih":"2026-10-20","makine":"Windows 11 10.0.26300, 32 logical CPUs"}

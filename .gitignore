@@ -6,3 +6,4 @@ scanner-rs/target/
 *.log
 .omc/
 .impeccable/
+.vitrin/
