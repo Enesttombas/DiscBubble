@@ -1,5 +1,5 @@
 {"varliklar":[
-{"dosya":"hero.gif","tur":"gif","komut":"playwright kayit (demo agaci, bubblescan walk) + hyperframes render","tarih":"2026-10-20"},
+{"dosya":"hero.gif","tur":"gif","komut":"playwright kayit (demo agaci, bubblescan walk) + hyperframes render; 2026-10-22 ffmpeg fps=12 max_colors=96 (<=5 MB)","tarih":"2026-10-22","boyut":4494801},
 {"dosya":"banner.png","tur":"png","komut":"headless chrome screenshot","tarih":"2026-10-20"},
 {"dosya":"architecture.svg","tur":"svg","komut":"elle","tarih":"2026-10-20"},
 {"dosya":"bench.svg","tur":"svg","komut":"node bench/scan-bench.cjs 7 60000","tarih":"2026-10-20"},
