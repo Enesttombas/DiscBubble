@@ -8,8 +8,8 @@ DiscBubble, Windows diskini dolduran şeyleri yakınlaştırılabilir baloncukla
 ## Ne yapar
 
 - **Baloncuk görünümü.** Her klasör ve dosya, disk kullanımıyla orantılı bir daire (canvas üzerinde D3 circle packing). Tıkla yakınlaş, Esc ile yukarı çık.
-- **Üç renk modu.** Güvenlik (silinebilir, geri gelir ama bedelli, önce bak, kişisel, program, dokunma), dosya türü ve önem.
-- **Temizlik önerileri.** Geçici dosya, önbellek, `node_modules`, büyük arşiv ve video için kural tabanlı liste; her öneride gerekçe var. Model depoları, paket önbellekleri ve `node_modules` "geri gelir, bedelli" olarak işaretlenir ve neyin kaybedileceği yazılır (ör. model adı ve ne kadarının yeniden ineceği); rozet Güvenli ve Bedelli toplamlarını ayrı gösterir. Bedelli öğeler varsayılan olarak Geri Dönüşüm Kutusu'na gider. Silme Geri Dönüşüm Kutusu'na ya da kalıcı olur; kilitli klasörde hangi programın tuttuğu söylenir (Windows Restart Manager).
+- **Üç renk modu.** Güvenlik (güvenle silinebilir, yeniden indirilebilir, kontrol edilmeli, kişisel veri, program, sistem dosyası, sınıflandırılmamış), dosya türü ve önem. Her güvenlik kademesinde "Risk yok"tan "Kritik"e kadar bir risk düzeyi gösterilir.
+- **Temizlik önerileri.** Geçici dosya, önbellek, `node_modules`, büyük arşiv ve video için kural tabanlı liste; her öneride gerekçe var. Model depoları, paket önbellekleri ve `node_modules` "Yeniden indirilebilir" olarak işaretlenir ve silmenin somut etkisi yazılır (ör. model adı, ne kadarının yeniden indirileceği ve bu sürede hangi araçların çalışmayacağı); rozet Güvenli ve Yeniden indirilebilir toplamlarını ayrı gösterir. Yeniden indirilebilir öğeler varsayılan olarak Geri Dönüşüm Kutusu'na gider. Silme Geri Dönüşüm Kutusu'na ya da kalıcı olur; kilitli klasörde hangi programın tuttuğu söylenir (Windows Restart Manager).
 - **Sürücüler sekmesi.** Driver Store'daki eski ve kullanılmayan üçüncü taraf paketleri bulur, `pnputil` ile siler (`/force` yok, kullanımdaki paketi Windows reddeder).
 
 ## Nasıl çalışır

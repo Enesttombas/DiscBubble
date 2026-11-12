@@ -34,7 +34,7 @@ const cacheTree = () => D('C:\\Users\\me\\.cache', [
   D('torch', [D('hub', [D('checkpoints', [F('resnet.pth', 0.19 * GB)])])]),
 ]);
 
-test('.cache is not green; huggingface costs; Hunyuan3D-2 costs, with size and model name', () => {
+test('.cache is not green; huggingface is re-downloadable; Hunyuan3D-2 is re-downloadable, with size and model name', () => {
   const r = run(cacheTree());
   assert.notEqual(r.sf, 'safe');
   assert.equal(r.sf, 'check', '.cache holds an unrecognized 1 GB+ share: review first');
@@ -45,8 +45,8 @@ test('.cache is not green; huggingface costs; Hunyuan3D-2 costs, with size and m
   assert.equal(hy.sf, 'cost');
   assert.match(hy.why, /17\.1 GB/);
   assert.match(hy.why, /tencent\/Hunyuan3D-2\b/);
-  assert.match(hy.why, /downloaded again/);
-  // Files inside a model stay costly and do not turn green.
+  assert.match(hy.why, /^If deleted, 17\.1 GB is downloaded again \(tencent\/Hunyuan3D-2\)\. Tools that use this model will not work until the download completes\.$/);
+  // Files inside a model stay re-downloadable and do not turn green.
   assert.equal(find(r, 'huggingface\\hub\\models--tencent--Hunyuan3D-2\\blobs\\a').sf, 'cost');
 });
 
@@ -65,13 +65,13 @@ test('.cache gives the same result when the user folder is scanned', () => {
   assert.equal(find(r, '.cache\\huggingface\\hub\\models--tencent--Hunyuan3D-2').sf, 'cost');
 });
 
-test('a model folder scanned as the root still costs', () => {
+test('a model folder scanned as the root is still re-downloadable', () => {
   const r = run({ ...model('tencent', 'Hunyuan3D-2', 17.06), n: 'C:\\Users\\me\\.cache\\huggingface\\hub\\models--tencent--Hunyuan3D-2' });
   assert.equal(r.sf, 'cost');
   assert.match(r.why, /tencent\/Hunyuan3D-2/);
 });
 
-test('things regenerated at no cost are green', () => {
+test('things recreated automatically are green', () => {
   const r = run(D('C:\\Users\\me', [D('AppData', [D('Local', [
     D('Temp', [F('a.tmp', 300 * MB), D('x', [F('y', 200 * MB)])]),
     D('NVIDIA', [D('DXCache', [F('s.bin', 400 * MB)])]),
@@ -87,7 +87,7 @@ test('things regenerated at no cost are green', () => {
     assert.equal(find(r, p).sf, 'safe', p);
 });
 
-test('package caches and virtual environments cost, with a consequence sentence', () => {
+test('package caches and virtual environments are re-downloadable, with a consequence sentence', () => {
   const r = run(D('C:\\Users\\me', [
     D('.gradle', [D('caches', [F('j.jar', 2 * GB)])]),
     D('.nuget', [D('packages', [F('p.nupkg', GB)])]),
@@ -104,7 +104,7 @@ test('package caches and virtual environments cost, with a consequence sentence'
   assert.equal(find(r, '.cargo\\bin').sf, 'check', 'tools installed with cargo are not a cache');
 });
 
-test('node_modules: old project costs, active project needs review; sentence has age and npm install', () => {
+test('node_modules: old project is re-downloadable, active project needs review; sentence has age and npm install', () => {
   const r = run(D('C:\\Users\\me\\Documents', [
     D('old', [D('node_modules', [F('x.js', 400 * MB, ago(250))]), F('index.js', 4000, ago(245))]),
     D('new', [D('node_modules', [F('x.js', 400 * MB, ago(300))]), F('index.js', 4000, ago(9))]),
@@ -118,14 +118,14 @@ test('node_modules: old project costs, active project needs review; sentence has
   assert.match(cur.why, /npm install/);
 });
 
-test('suggestions: .cache is not suggested whole as safe; models are suggested one by one as costly', () => {
+test('suggestions: .cache is not suggested whole as safe; models are suggested one by one as re-downloadable', () => {
   const r = run(cacheTree());
   const sugs = C.suggest(r);
   assert.ok(!sugs.some(s => s.n === r || s.n.data.n === 'huggingface'), '.cache / huggingface are not suggested as one piece');
   const hy = sugs.find(s => s.n.data.n === 'models--tencent--Hunyuan3D-2');
   assert.ok(hy);
   assert.equal(hy.conf, 'cost');
-  assert.match(hy.why, /17\.1 GB model is downloaded again/);
+  assert.match(hy.why, /If deleted, 17\.1 GB is downloaded again \(tencent\/Hunyuan3D-2\)/);
   assert.ok(sugs.every(s => s.conf !== 'safe' || s.n.sf === 'safe'));
   const t = C.sugTotals(sugs);
   assert.equal(t.safe, 0);
@@ -139,10 +139,19 @@ test('badge split and a safe suggestion next to a mixed folder', () => {
   assert.ok(Math.abs(t.cost - 3 * GB) < MB);
 });
 
-test('system is still do-not-touch; Windows\\Temp is green', () => {
+test('system is still a system file; Windows\\Temp is green', () => {
   const r = run(D('C:\\', [D('Windows', [D('System32', [F('k.dll', GB)]), D('Temp', [F('t', 200 * MB)])])]));
   assert.equal(find(r, 'Windows\\System32').sf, 'never');
   assert.equal(find(r, 'Windows\\Temp').sf, 'safe');
+});
+
+test('tier names and risk levels come from one source', () => {
+  const names = Object.fromEntries(Object.entries(C.SAFE).map(([k, s]) => [k, [s.name, s.risk]]));
+  assert.deepEqual(names, {
+    safe: ['Safe to delete', 'No risk'], cost: ['Re-downloadable', 'Low risk'], check: ['Review first', 'Medium risk'],
+    keep: ['Personal data', 'High risk'], prog: ['Program', 'High risk'], never: ['System file', 'Critical'], unk: ['Unclassified', 'Unknown'],
+  });
+  for (const s of Object.values(C.SAFE)) assert.match(s.desc, /^[^.]+\. [^.]+\.$/, 'description: contents sentence + consequence sentence');
 });
 
 test('age sentence', () => {

@@ -8,8 +8,8 @@ DiscBubble shows what fills a Windows disk as zoomable bubbles, suggests what is
 ## What it does
 
 - **Bubble view.** Every folder and file is a circle sized by its disk usage (D3 circle packing on a canvas). Click to zoom in, Esc to go up.
-- **Three color modes.** Safety (safe to delete, comes back at a cost, review first, personal, program, do not touch), file type, and importance.
-- **Cleanup suggestions.** Rule-based list of temp files, caches, `node_modules`, large archives and videos, with a reason for each. Model stores, package caches and `node_modules` are marked "comes back, at a cost" with what you lose (for example the model name and how much is downloaded again), and the badge totals Safe and Costly separately. Costly items go to the Recycle Bin by default. Deletion goes to the Recycle Bin or is permanent, and a locked folder reports which program holds it (Windows Restart Manager).
+- **Three color modes.** Safety (safe to delete, re-downloadable, review first, personal data, program, system file, unclassified), file type, and importance. Each safety tier shows a risk level, from "No risk" to "Critical".
+- **Cleanup suggestions.** Rule-based list of temp files, caches, `node_modules`, large archives and videos, with a reason for each. Model stores, package caches and `node_modules` are marked "Re-downloadable" with the concrete effect of deleting them (for example the model name, how much is downloaded again and which tools stop working until then), and the badge totals Safe and Re-downloadable separately. Re-downloadable items go to the Recycle Bin by default. Deletion goes to the Recycle Bin or is permanent, and a locked folder reports which program holds it (Windows Restart Manager).
 - **Drivers tab.** Finds old and unused third-party driver packages in the Driver Store and removes them with `pnputil` (no `/force`, Windows refuses packages in use).
 
 ## How it works

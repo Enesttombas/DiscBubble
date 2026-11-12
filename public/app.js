@@ -6,19 +6,19 @@ const BG = '#0c0d11';
 
 const { CATS, CAT, GRP, SAFE, fmt, ageText } = Classify;
 const GRPDESC = {
-  system: 'Windows, drivers, recovery. Do not touch.',
-  user: 'Your user folder: documents, downloads, desktop.',
+  system: 'Windows, drivers, recovery. Do not delete.',
+  user: 'The user folder: documents, downloads, desktop.',
   app: 'Program Files, AppData: installed apps.',
   game: 'Game libraries; large and re-downloadable.',
-  temp: 'Temp, cache, model and package stores. See the Safety view for the cost.',
+  temp: 'Temp, cache, model and package stores. The Safety view shows the effect of deleting.',
   other: 'Unclassified folders.',
 };
 const TURDESC = {
   video: 'Movies, shows, screen recordings', image: 'Photos and graphics', audio: 'Music, voice recordings', vm: 'Virtual disks (VirtualBox, Hyper-V)',
   iso: 'ISO and install images', arch: 'zip, rar, 7z archives', backup: 'Backups (.bak, .old)', doc: 'PDF and Office documents',
-  code: 'Source code and data files', db: 'Database files', exe: 'Executable programs', lib: "DLL and driver files; don't delete",
+  code: 'Source code and data files', db: 'Database files', exe: 'Executable programs', lib: 'DLL and driver files; do not delete',
   gamefile: "Games' own data files", log: 'Logs and crash dumps; deletable', cache: 'Cache; regenerated if deleted', model: 'Hugging Face, torch, ollama; re-downloaded if deleted',
-  devcache: 'node_modules, .gradle etc.; re-downloaded', update: 'Windows update leftovers', tmp: 'Temporary files', other: 'Unclassified files',
+  devcache: 'node_modules, .gradle etc.; re-downloaded if deleted', update: 'Windows update leftovers', tmp: 'Temporary files', other: 'Unclassified files',
 };
 let colorMode = 'safe', filt = null, stats = { grp: {}, sub: {}, safe: {} }, sugs = [];
 const colorOf = n => (colorMode === 'safe' ? SAFE[n.sf].col : colorMode === 'grp' ? GRP[n.grp].col : n.cat.col);
@@ -109,10 +109,10 @@ function build(tree) {
 function renderLegend() {
   const mode = colorMode, st = stats[mode === 'safe' ? 'safe' : mode === 'grp' ? 'grp' : 'sub'], title = { safe: 'Safety scale', grp: 'Importance groups', type: 'File types' }[mode];
   let items;
-  if (mode === 'safe') items = Object.entries(SAFE).map(([id, s]) => ({ id, name: s.name, col: s.col, desc: s.desc }));
+  if (mode === 'safe') items = Object.entries(SAFE).map(([id, s]) => ({ id, name: s.name, risk: s.risk, col: s.col, desc: s.desc }));
   else if (mode === 'grp') items = Object.entries(GRP).map(([id, g]) => ({ id, name: g.name, col: g.col, desc: GRPDESC[id] }));
   else items = CATS.filter(c => c.id !== 'small' && st[c.id]).sort((x, y) => st[y.id] - st[x.id]).map(c => ({ id: c.id, name: c.name, col: c.col, desc: TURDESC[c.id] || '' }));
-  $('key').innerHTML = `<h5>${title}</h5>` + items.map(c => `<button class="kitem${filt && filt.id === c.id ? ' on' : ''}${st[c.id] ? '' : ' zero'}" data-id="${c.id}"><i style="background:${c.col}"></i><span><b>${c.name}</b><small>${c.desc}</small></span><em>${st[c.id] ? fmt(st[c.id]) : ''}</em></button>`).join('') +
+  $('key').innerHTML = `<h5>${title}</h5>` + items.map(c => `<button class="kitem${filt && filt.id === c.id ? ' on' : ''}${st[c.id] ? '' : ' zero'}" data-id="${c.id}"><i style="background:${c.col}"></i><span><b>${c.name}${c.risk ? `<span class="rk">${c.risk}</span>` : ''}</b><small>${c.desc}</small></span><em>${st[c.id] ? fmt(st[c.id]) : ''}</em></button>`).join('') +
     '<p>Click a color: filter · double-click: show only that · Esc: clear</p>';
   $('key').querySelectorAll('.kitem').forEach(b => { b.onclick = () => toggleFilter(b.dataset.id); b.ondblclick = () => soloFilter(b.dataset.id); });
   $('legend').innerHTML = '<span style="opacity:.6">click: enter · space / Esc: go up · right-click: menu · Ctrl/Shift: multi-select</span>';
@@ -131,8 +131,10 @@ function renderCrumbs() {
 
 // ---- side panel: multi-select, category filter, suggestions ----
 let sel = new Set(), anchor = -1, sideNodes = [], sideTab = 'dirs';
-const CF = { safe: 'Safe', cost: 'Costly', check: 'Review first' };
+const CF = { safe: 'Safe', cost: 'Re-downloadable', check: 'Review first' };
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+// The "If deleted:" label is not repeated when the sentence already states the effect of deleting.
+const effOf = w => (/delet/i.test(w) ? w : 'If deleted: ' + w);
 function bigFiles() {
   const out = [];
   root.each(n => { if (!n.children && !n.data.o) out.push(n); });
@@ -241,8 +243,8 @@ function renderSug() {
   const t = Classify.sugTotals(sugs);
   renderRows(sugs.map(s => s.n), 'Cleanup suggestions', (c, i) => `<b class="cf cf-${sugs[i].conf}">${CF[sugs[i].conf]}</b> ${esc(sugs[i].why)}`);
   $('tools').innerHTML = sugs.length
-    ? `<span>Safe: ${t.nSafe} items · ${fmt(t.safe)} · Costly: ${fmt(t.cost)}</span><button onclick="selSafe()">Select safe</button>`
-    : '<span>No suggestions, looks clean.</span>';
+    ? `<span>Safe: ${t.nSafe} items · ${fmt(t.safe)} · Re-downloadable: ${fmt(t.cost)}</span><button onclick="selSafe()">Select safe</button>`
+    : '<span>No items suggested for deletion.</span>';
 }
 // ---- Drivers tab: old / unused driver packages ----
 let drv = null, drvSel = new Set();
@@ -307,18 +309,18 @@ async function drvRemove() {
 let dlgSel = new Set();
 const dlgOpen = () => $('sugdlg').classList.contains('on');
 const EFFECT = {
-  safe: 'If deleted: no problem. Apps recreate it when needed.',
-  cost: "If deleted: it comes back, at a cost. It has to be re-downloaded or reinstalled, and the tool won't work until then. Moved to the Recycle Bin.",
-  check: "If deleted: it won't come back. If needed (game, image, video) you'll have to re-download it or restore from backup.",
+  safe: 'If deleted: nothing breaks. Apps recreate it when needed.',
+  cost: 'If deleted: it has to be downloaded or reinstalled again; the related tool does not work until then. Moved to the Recycle Bin.',
+  check: 'If deleted: it does not come back. If needed (game, image, video), it has to be downloaded again or restored from a backup.',
 };
-// Badge: safe and costly are totalled separately; items to review appear only in the tooltip.
+// Badge: safe and re-downloadable are totalled separately; items to review appear only in the tooltip.
 function updateSugBtn() {
   const t = Classify.sugTotals(sugs), b = $('sugBtn');
   b.hidden = !sugs.length;
-  b.innerHTML = 'Suggested deletions <em>Safe ' + fmt(t.safe) + ' · Costly ' + fmt(t.cost) + '</em>';
-  b.title = t.nSafe + ' safe items · ' + t.nCost + ' costly items' + (t.nCheck ? ' · ' + t.nCheck + ' to review (' + fmt(t.check) + ')' : '');
+  b.innerHTML = 'Suggested deletions <em>Safe ' + fmt(t.safe) + ' · Re-downloadable ' + fmt(t.cost) + '</em>';
+  b.title = t.nSafe + ' safe items · ' + t.nCost + ' re-downloadable items' + (t.nCheck ? ' · ' + t.nCheck + ' to review (' + fmt(t.check) + ')' : '');
 }
-// Delete method in the suggestions dialog: safe items are deleted permanently, costly and above go to the Recycle Bin.
+// Delete method in the suggestions dialog: safe items are deleted permanently, re-downloadable and above go to the Recycle Bin.
 const sugKind = n => (n.sf === 'safe' ? 'remove' : 'trash');
 function openSugDlg() {
   if (!sugs.length) return toast('Nothing suggested for deletion');
@@ -335,7 +337,7 @@ function dlgFoot() {
 function renderSugDlg() {
   const ul = $('sdList'); ul.innerHTML = '';
   const t = Classify.sugTotals(sugs);
-  $('sdSub').textContent = sugs.length + ' suggestions · Safe ' + t.nSafe + ' · ' + fmt(t.safe) + ' · Costly ' + t.nCost + ' · ' + fmt(t.cost) + (t.nCheck ? ' · Review ' + t.nCheck + ' · ' + fmt(t.check) : '');
+  $('sdSub').textContent = sugs.length + ' suggestions · Safe ' + t.nSafe + ' · ' + fmt(t.safe) + ' · Re-downloadable ' + t.nCost + ' · ' + fmt(t.cost) + (t.nCheck ? ' · Review first ' + t.nCheck + ' · ' + fmt(t.check) : '');
   sugs.forEach(s => {
     const n = s.n, g = GRP[n.grp], li = document.createElement('li');
     li.className = 'sdrow' + (dlgSel.has(n) ? ' sel' : '');
@@ -345,7 +347,7 @@ function renderSugDlg() {
     li.querySelector('.sdsz').textContent = fmt(n.value);
     li.querySelector('.sdpath').textContent = pathOf(n);
     li.querySelector('.sdbadges').innerHTML = '<span class="cf cf-' + s.conf + '">' + CF[s.conf] + '</span>' +
-      '<span class="sdtag"><i style="background:' + SAFE[n.sf].col + '"></i>' + SAFE[n.sf].name + '</span>' +
+      '<span class="sdtag"><i style="background:' + SAFE[n.sf].col + '"></i>' + SAFE[n.sf].name + ' · ' + SAFE[n.sf].risk + '</span>' +
       '<span class="sdtag"><i style="background:' + g.col + '"></i>' + g.name + (n.cat ? ' · ' + n.cat.name : '') + '</span>' +
       '<span class="sdtag">Importance: ' + (s.conf === 'safe' ? 'low' : 'medium') + '</span>' +
       (n.data.m ? '<span class="sdtag">' + ageText(n.data.m, Date.now() / 1000) + '</span>' : '');
@@ -416,8 +418,8 @@ function showTip(d, e) {
   const pct = d.parent ? (d.value / d.parent.value * 100).toLocaleString('en-US', { maximumFractionDigits: 1 }) + '% of parent folder' : '';
   t.innerHTML = `<b>${d.data.n.replace(/</g, '&lt;')}</b><em>${fmt(d.value)}</em> ${pct ? '· ' + pct : ''}` +
     `<small class="grp"><i style="background:${GRP[d.grp].col}"></i>${GRP[d.grp].name} · ${GRP[d.grp].tag}</small>` +
-    `<small class="grp"><i style="background:${SAFE[d.sf].col}"></i>${SAFE[d.sf].name}</small>` +
-    (d.why && d.sf !== 'never' ? `<small>If you delete: ${esc(d.why)}</small>` : '') +
+    `<small class="grp"><i style="background:${SAFE[d.sf].col}"></i>${SAFE[d.sf].name} · ${SAFE[d.sf].risk}</small>` +
+    (d.why && d.sf !== 'never' ? `<small>${esc(effOf(d.why))}</small>` : '') +
     (d.data.m ? `<small>Last modified: ${ageText(d.data.m, Date.now() / 1000)}</small>` : '') +
     (isDir(d) ? `<small>${d.children.length} items</small>` : '') + `<small>${pathOf(d).replace(/</g, '&lt;')}</small>`;
   t.classList.add('on');
@@ -599,13 +601,13 @@ async function refreshDrives() {
 
 function confirmDelete(list, kindOf) {
   const one = list.length === 1, ks = new Set(list.map(kindOf)), mixed = ks.size > 1, tr = !ks.has('remove');
-  // On costly and higher tiers the "if you delete" sentence shows in the confirmation.
+  // On re-downloadable and higher tiers the "if deleted" sentence shows in the confirmation.
   const costly = list.filter(n => n.sf !== 'safe' && n.why);
-  const eff = costly.length ? 'If you delete: ' + costly.slice(0, 3).map(n => (one ? '' : n.data.n + ': ') + n.why).join(' · ') + (costly.length > 3 ? ` (+${costly.length - 3} more items)` : '') + '. ' : '';
+  const eff = costly.length ? costly.slice(0, 3).map(n => (one ? '' : n.data.n + ': ') + effOf(n.why)).join(' · ') + (costly.length > 3 ? ` (+${costly.length - 3} more items)` : '') + ' ' : '';
   return confirmBox(mixed ? `Delete ${list.length} items?` : tr ? (one ? 'Move to Recycle Bin?' : `Move ${list.length} items to Recycle Bin?`) : one ? 'Delete permanently?' : `Delete ${list.length} items permanently?`,
     one ? list[0].data.n + ' · ' + fmt(list[0].value) + (isDir(list[0]) ? ' · folder' : '') : 'Total ' + fmt(sumOf(list)),
     one ? pathOf(list[0]) : list.slice(0, 4).map(n => n.data.n + ' · ' + fmt(n.value)).join('\n') + (list.length > 4 ? `\nand ${list.length - 4} more items` : ''),
-    eff + (mixed ? 'Safe items are deleted permanently; costly ones are moved to the Recycle Bin.' : tr ? 'You can restore it from the Recycle Bin; space is freed when the bin is emptied.' : 'This item will not go to the Recycle Bin and cannot be restored.'),
+    eff + (mixed ? 'Safe items are deleted permanently; the others are moved to the Recycle Bin.' : tr ? 'It can be restored from the Recycle Bin; disk space is freed when the bin is emptied.' : 'This item will not go to the Recycle Bin and cannot be restored.'),
     mixed ? 'Delete' : tr ? 'Move to Recycle Bin' : 'Delete permanently');
 }
 function confirmBox(title, name, detail, note, yes) {
@@ -696,7 +698,7 @@ async function runQueue() {
   removing = false; rqCancel = false; rq = []; pq = null; progHide();
   const top = topOnly(ok);
   if (top.length) { removeNodes(top); setTimeout(refreshDrives, 600); }
-  const size = fmt(sumOf(top)), what = kinds.size > 1 ? 'removed (safe ones permanently, costly ones to the Recycle Bin)' : (kinds.has('trash') || (!kinds.size && kind === 'trash')) ? 'moved to Recycle Bin' : 'permanently deleted';
+  const size = fmt(sumOf(top)), what = kinds.size > 1 ? 'removed (safe items permanently deleted, the others moved to the Recycle Bin)' : (kinds.has('trash') || (!kinds.size && kind === 'trash')) ? 'moved to Recycle Bin' : 'permanently deleted';
   if (cancelled) return toast(`Cancelled: ${ok.length} items ${what} (${size}); the rest was left untouched`, true);
   if (!fail.length) toast(`${ok.length} items ${what} · ${size}` + (kinds.has('trash') ? ' (space is freed when the bin is emptied)' : ' freed'));
   else {

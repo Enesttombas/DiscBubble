@@ -34,23 +34,23 @@
 
   // ---- importance groups ----
   const GRP = {
-    system: { name: 'System', col: '#ff6b8b', tag: 'Important · do not touch' },
+    system: { name: 'System', col: '#ff6b8b', tag: 'Critical · do not delete' },
     user: { name: 'Personal files', col: '#6fe3a0', tag: 'Important' },
     app: { name: 'Application', col: '#5ec8ff', tag: 'Normal' },
     game: { name: 'Game', col: '#c78bff', tag: 'Normal · large, deletable' },
-    temp: { name: 'Cache / temp', col: '#ffb85e', tag: 'Regenerable · see the Safety color for the cost' },
-    other: { name: 'Other', col: '#8d96aa', tag: 'Unknown' },
+    temp: { name: 'Cache / temp', col: '#ffb85e', tag: 'Regenerable · the Safety view shows the effect of deleting' },
+    other: { name: 'Other', col: '#8d96aa', tag: 'Unclassified' },
   };
 
-  // ---- safety scale (order = risk order = display order) ----
+  // ---- safety scale (order = risk order = display order) · risk: the tier's short risk level ----
   const SAFE = {
-    safe: { name: 'Safe to delete', col: '#3ddc84', desc: 'Temp files, GPU / browser cache, logs. Regenerated at no cost.' },
-    cost: { name: 'Comes back, at a cost', col: '#d6d24c', desc: 'Models, package stores, node_modules, virtual environments. Re-downloaded or reinstalled; the tool does not work until then.' },
-    check: { name: 'Review first', col: '#ffa940', desc: "Large games, images, archives, videos, unrecognized caches. Delete if you don't need them." },
-    keep: { name: 'Personal', col: '#4f9dff', desc: 'Your documents, photos, projects. Consider a backup before deleting.' },
-    prog: { name: 'Program', col: '#b48cff', desc: "Installed app. Don't delete files; uninstall from Settings." },
-    never: { name: 'Do not touch', col: '#ff5252', desc: 'Windows and system files. Deleting them can break your PC.' },
-    unk: { name: 'Unknown', col: '#8d96aa', desc: "Couldn't classify. Don't delete without checking what it is." },
+    safe: { name: 'Safe to delete', risk: 'No risk', col: '#3ddc84', desc: 'Temp files, GPU and browser caches, logs. If deleted, they are recreated automatically when needed.' },
+    cost: { name: 'Re-downloadable', risk: 'Low risk', col: '#d6d24c', desc: 'Models, package stores, node_modules, virtual environments. If deleted, they are downloaded or reinstalled again; the related tool does not work until then.' },
+    check: { name: 'Review first', risk: 'Medium risk', col: '#ffa940', desc: 'Large games, disk images, archives, videos, unrecognized caches. If deleted, they do not come back without a new download or a backup.' },
+    keep: { name: 'Personal data', risk: 'High risk', col: '#4f9dff', desc: 'Documents, photos, projects. If deleted, they can only be restored from a backup.' },
+    prog: { name: 'Program', risk: 'High risk', col: '#b48cff', desc: 'Installed applications. Deleting their files breaks the application; uninstall it from Settings instead.' },
+    never: { name: 'System file', risk: 'Critical', col: '#ff5252', desc: 'Windows and system files. If deleted, Windows may fail to start or work correctly.' },
+    unk: { name: 'Unclassified', risk: 'Unknown', col: '#8d96aa', desc: 'Unrecognized content. The effect of deleting it is unknown; inspect the contents first.' },
   };
   const RANK = { safe: 0, cost: 1, check: 2, unk: 3, keep: 4, prog: 5, never: 6 };
 
@@ -81,45 +81,45 @@
   const S = (id, t, kind, why, x) => ({ id, t, kind, why, ...x });
   const hfName = nm => { const r = nm.replace(/^(models|datasets|spaces)--/, ''), i = r.indexOf('--'); return i < 0 ? r : r.slice(0, i) + '/' + r.slice(i + 2); };
   const SIG = {
-    hf: S('hf', 'cost', 'split', n => `Hugging Face model store: if you delete it, ${fmt(n.value)} is downloaded again; tools that use these models will not work until then`, { model: 1 }),
-    hfhub: S('hfhub', 'cost', 'split', n => `Hugging Face models: if you delete them, ${fmt(n.value)} is downloaded again`, { model: 1 }),
-    hfmodel: S('hfmodel', 'cost', 'leaf', (n, x) => `${fmt(n.value)} model is downloaded again (${hfName(x.name)}); tools that use it will not work until then`, { model: 1 }),
-    hfdata: S('hfdata', 'cost', 'leaf', (n, x) => `${fmt(n.value)} dataset is downloaded again` + (/^datasets--/i.test(x.name) ? ` (${hfName(x.name)})` : ''), { model: 1 }),
-    torch: S('torch', 'cost', 'leaf', n => `PyTorch hub models: ${fmt(n.value)} is downloaded again`, { model: 1 }),
-    ollama: S('ollama', 'cost', 'leaf', n => `Ollama models: ${fmt(n.value)} is downloaded again (ollama pull)`, { model: 1 }),
-    lmstudio: S('lmstudio', 'cost', 'leaf', n => `LM Studio models: ${fmt(n.value)} is downloaded again`, { model: 1 }),
-    gradle: S('gradle', 'cost', 'leaf', n => `Gradle dependencies: ${fmt(n.value)} is downloaded again; the first build takes longer`),
-    nuget: S('nuget', 'cost', 'leaf', n => `.NET packages: ${fmt(n.value)} is downloaded again (dotnet restore)`),
-    cargo: S('cargo', 'cost', 'container', 'Rust: the registry is downloaded again, tools in bin are installed programs'),
-    cargoreg: S('cargoreg', 'cost', 'leaf', n => `Rust crates: ${fmt(n.value)} is downloaded again; the first build takes longer`),
-    maven: S('maven', 'cost', 'leaf', n => `Maven dependencies: ${fmt(n.value)} is downloaded again`),
-    pip: S('pip', 'cost', 'leaf', n => `pip cache: packages are downloaded again (${fmt(n.value)})`),
-    uv: S('uv', 'cost', 'leaf', n => `uv package cache: ${fmt(n.value)} is downloaded again; rebuilding environments gets slower`),
-    pnpm: S('pnpm', 'cost', 'leaf', n => `pnpm store: ${fmt(n.value)} is downloaded again; projects need pnpm install`),
-    yarn: S('yarn', 'cost', 'leaf', n => `Yarn cache: packages are downloaded again (${fmt(n.value)})`),
-    gomod: S('gomod', 'cost', 'leaf', n => `Go modules: ${fmt(n.value)} is downloaded again`),
-    conda: S('conda', 'cost', 'leaf', n => `Conda package cache: ${fmt(n.value)} is downloaded again`),
-    condaenv: S('condaenv', 'cost', 'leaf', 'Conda environment: if you delete it, you have to rebuild the environment'),
-    venv: S('venv', 'cost', 'leaf', 'Python virtual environment: if you delete it, it needs a reinstall (pip install -r requirements.txt)'),
+    hf: S('hf', 'cost', 'split', n => `Hugging Face model store. If deleted, ${fmt(n.value)} is downloaded again. Tools that use these models will not work until the download completes.`, { model: 1 }),
+    hfhub: S('hfhub', 'cost', 'split', n => `Hugging Face models. If deleted, ${fmt(n.value)} is downloaded again. Tools that use these models will not work until the download completes.`, { model: 1 }),
+    hfmodel: S('hfmodel', 'cost', 'leaf', (n, x) => `If deleted, ${fmt(n.value)} is downloaded again (${hfName(x.name)}). Tools that use this model will not work until the download completes.`, { model: 1 }),
+    hfdata: S('hfdata', 'cost', 'leaf', (n, x) => `If deleted, the ${fmt(n.value)} dataset is downloaded again` + (/^datasets--/i.test(x.name) ? ` (${hfName(x.name)})` : '') + '. Tools that use this dataset will not work until the download completes.', { model: 1 }),
+    torch: S('torch', 'cost', 'leaf', n => `PyTorch hub models. If deleted, ${fmt(n.value)} is downloaded again. Tools that use these models will not work until the download completes.`, { model: 1 }),
+    ollama: S('ollama', 'cost', 'leaf', n => `Ollama models. If deleted, ${fmt(n.value)} is downloaded again (ollama pull). The models are unavailable until the download completes.`, { model: 1 }),
+    lmstudio: S('lmstudio', 'cost', 'leaf', n => `LM Studio models. If deleted, ${fmt(n.value)} is downloaded again. The models are unavailable until the download completes.`, { model: 1 }),
+    gradle: S('gradle', 'cost', 'leaf', n => `Gradle dependencies. If deleted, ${fmt(n.value)} is downloaded again. The next build takes longer.`),
+    nuget: S('nuget', 'cost', 'leaf', n => `.NET packages. If deleted, ${fmt(n.value)} is downloaded again (dotnet restore). The next build takes longer.`),
+    cargo: S('cargo', 'cost', 'container', 'Rust tool folder. If deleted, the registry is downloaded again; installed tools in bin are removed.'),
+    cargoreg: S('cargoreg', 'cost', 'leaf', n => `Rust crates. If deleted, ${fmt(n.value)} is downloaded again. The next build takes longer.`),
+    maven: S('maven', 'cost', 'leaf', n => `Maven dependencies. If deleted, ${fmt(n.value)} is downloaded again. The next build takes longer.`),
+    pip: S('pip', 'cost', 'leaf', n => `pip cache. If deleted, packages are downloaded again when needed (${fmt(n.value)}). Installed environments are not affected.`),
+    uv: S('uv', 'cost', 'leaf', n => `uv package cache. If deleted, ${fmt(n.value)} is downloaded again. Rebuilding environments takes longer.`),
+    pnpm: S('pnpm', 'cost', 'leaf', n => `pnpm store. If deleted, ${fmt(n.value)} is downloaded again. Projects need pnpm install again.`),
+    yarn: S('yarn', 'cost', 'leaf', n => `Yarn cache. If deleted, packages are downloaded again when needed (${fmt(n.value)}).`),
+    gomod: S('gomod', 'cost', 'leaf', n => `Go modules. If deleted, ${fmt(n.value)} is downloaded again. The next build takes longer.`),
+    conda: S('conda', 'cost', 'leaf', n => `Conda package cache. If deleted, ${fmt(n.value)} is downloaded again.`),
+    condaenv: S('condaenv', 'cost', 'leaf', 'Conda environment. If deleted, the environment has to be rebuilt. Projects that use it will not run until the rebuild completes.'),
+    venv: S('venv', 'cost', 'leaf', 'Python virtual environment. If deleted, it has to be reinstalled (pip install -r requirements.txt). The project will not run until the install completes.'),
     nodemod: S('nodemod', 'cost', 'leaf', null, { age: 1 }),
-    temp: S('temp', 'safe', 'leaf', 'Temp files; safe to delete (files in use are skipped)'),
-    gpu: S('gpu', 'safe', 'leaf', 'Graphics shader cache; rebuilt on the next launch'),
-    browser: S('browser', 'safe', 'leaf', 'Browser / app cache; pages load fresh the first time'),
-    pyc: S('pyc', 'safe', 'leaf', 'Python bytecode cache; regenerated automatically'),
-    prefetch: S('prefetch', 'safe', 'leaf', 'Cache; Windows rebuilds it'),
-    dumps: S('dumps', 'safe', 'leaf', "Crash dumps; not needed unless you're debugging"),
-    recycle: S('recycle', 'safe', 'leaf', 'Recycle Bin contents; cannot be restored once deleted'),
-    npm: S('npm', 'safe', 'leaf', 'npm cache; downloaded again when needed, projects are not affected'),
-    winlog: S('winlog', 'safe', 'leaf', 'Windows logs; safe to delete'),
-    wudl: S('wudl', 'safe', 'leaf', 'Downloaded Windows update files; downloaded again if needed'),
-    logfile: S('logfile', 'safe', 'leaf', 'Log / dump file; safe to delete'),
-    tmpfile: S('tmpfile', 'safe', 'leaf', 'Temp file; safe to delete'),
-    winold: S('winold', 'check', 'leaf', 'Old Windows installation; if you delete it, you cannot roll back to the old version', { sug: 1, upd: 1 }),
-    winbt: S('winbt', 'check', 'leaf', "Windows update setup leftovers; don't touch while an update is unfinished", { sug: 1, upd: 1 }),
-    generic: S('generic', 'safe', 'container', 'Generic cache folder; its contents are classified one by one'),
-    unrec: S('unrec', 'check', 'unknown', "In a cache folder but not recognized; if you delete it, the tool may need a reinstall or its data again. Don't delete without looking inside"),
-    loosefile: S('loosefile', 'safe', 'leaf', 'Cache file; regenerated if deleted'),
-    loosemodel: S('loosemodel', 'cost', 'leaf', n => `Model file: if you delete it, ${fmt(n.value)} is downloaded again`, { model: 1 }),
+    temp: S('temp', 'safe', 'leaf', 'Temp files. If deleted, nothing breaks; files in use are skipped.'),
+    gpu: S('gpu', 'safe', 'leaf', 'Graphics shader cache. If deleted, it is rebuilt on the next launch.'),
+    browser: S('browser', 'safe', 'leaf', 'Browser / app cache. If deleted, pages load fresh the first time.'),
+    pyc: S('pyc', 'safe', 'leaf', 'Python bytecode cache. If deleted, it is regenerated automatically.'),
+    prefetch: S('prefetch', 'safe', 'leaf', 'Windows cache. If deleted, Windows rebuilds it.'),
+    dumps: S('dumps', 'safe', 'leaf', 'Crash dumps. If deleted, only debugging information is lost.'),
+    recycle: S('recycle', 'safe', 'leaf', 'Recycle Bin contents. If deleted, they cannot be restored.'),
+    npm: S('npm', 'safe', 'leaf', 'npm cache. If deleted, packages are downloaded again when needed; projects are not affected.'),
+    winlog: S('winlog', 'safe', 'leaf', 'Windows logs. If deleted, nothing breaks.'),
+    wudl: S('wudl', 'safe', 'leaf', 'Downloaded Windows update files. If deleted, they are downloaded again when needed.'),
+    logfile: S('logfile', 'safe', 'leaf', 'Log / dump file. If deleted, nothing breaks.'),
+    tmpfile: S('tmpfile', 'safe', 'leaf', 'Temp file. If deleted, nothing breaks.'),
+    winold: S('winold', 'check', 'leaf', 'Previous Windows installation. If deleted, rolling back to the previous Windows version is no longer possible.', { sug: 1, upd: 1 }),
+    winbt: S('winbt', 'check', 'leaf', 'Windows update setup leftovers. If deleted, an update in progress cannot complete.', { sug: 1, upd: 1 }),
+    generic: S('generic', 'safe', 'container', 'Generic cache folder. Its contents are classified one by one; the effect of deleting depends on the contents.'),
+    unrec: S('unrec', 'check', 'unknown', 'In a cache folder, but not recognized. If deleted, the related tool may need a reinstall or a new data download. Inspect the contents before deleting.'),
+    loosefile: S('loosefile', 'safe', 'leaf', 'Cache file. If deleted, it is recreated.'),
+    loosemodel: S('loosemodel', 'cost', 'leaf', n => `Model file. If deleted, ${fmt(n.value)} is downloaded again. Tools that use this model will not work until the download completes.`, { model: 1 }),
   };
   const NAME_SIG = {
     temp: 'temp', tmp: 'temp',
@@ -238,9 +238,9 @@
     let m = 0;
     if (n.parent) for (const c of n.parent.children || []) if (c !== n && c.data.n.toLowerCase() !== 'node_modules' && c.data.m > m) m = c.data.m;
     const age = ageText(m, now);
-    if (!m) return { t: 'cost', why: 'Needs `npm install`; the project will not run until then' };
-    if ((now - m) / DAY < ACTIVE_DAYS) return { t: 'check', why: `Active project (${age}); if you delete it, it needs \`npm install\` and the project will not run until then` };
-    return { t: 'cost', why: `Needs \`npm install\` · project ${age}` };
+    if (!m) return { t: 'cost', why: 'If deleted, `npm install` is needed. The project will not run until the install completes.' };
+    if ((now - m) / DAY < ACTIVE_DAYS) return { t: 'check', why: `Active project (${age}). If deleted, \`npm install\` is needed; the project will not run until the install completes.` };
+    return { t: 'cost', why: `Project ${age}. If deleted, \`npm install\` is needed; the project will not run until the install completes.` };
   }
   function evalSig(sig, n, src, now) {
     if (sig.id === 'nodemod') return nodeModules(n, now);
@@ -280,7 +280,7 @@
       if (!risky.length) return;
       n.sf = risky.reduce((w, c) => (RANK[c.sf] > RANK[w] ? c.sf : w), n.sf0); n.mixed = true;
       risky.sort((a, b) => b.value - a.value);
-      n.why = 'Mixed contents: ' + risky.slice(0, 3).map(c => `${c.data.n} ${fmt(c.value)} (${SAFE[c.sf].name.toLowerCase()})`).join(', ') + ". Don't delete it all at once; look inside";
+      n.why = 'Mixed contents: ' + risky.slice(0, 3).map(c => `${c.data.n} ${fmt(c.value)} (${SAFE[c.sf].name.toLowerCase()})`).join(', ') + '. Do not delete the folder as a whole; review the items one by one.';
     });
     return h;
   }
@@ -298,9 +298,9 @@
           if (own && n.value >= 50 * MB && (n.sf === 'safe' || n.sf === 'cost' || n.sig.sug)) r = [n.sf, n.why];
         } else {
           const dir = !!n.children;
-          if (dir && n.grp === 'game' && n.parent.grp !== 'game' && n.value >= GB) r = ['check', "Game library; can be re-downloaded from the store, delete it if you don't play it"];
-          else if (!dir && ['vm', 'iso', 'arch', 'backup'].includes(n.cat.id) && n.value >= GB) r = ['check', 'Large ' + n.cat.name.toLowerCase() + "; delete if you no longer need it"];
-          else if (!dir && n.cat.id === 'video' && n.value >= 2 * GB) r = ['check', 'Large video; check whether you have a backup'];
+          if (dir && n.grp === 'game' && n.parent.grp !== 'game' && n.value >= GB) r = ['check', 'Game library. If deleted, it has to be downloaded again from the store. Can be deleted if it is no longer played.'];
+          else if (!dir && ['vm', 'iso', 'arch', 'backup'].includes(n.cat.id) && n.value >= GB) r = ['check', 'Large ' + n.cat.name.toLowerCase() + '. If deleted, it does not come back. Can be deleted if it is no longer needed.'];
+          else if (!dir && n.cat.id === 'video' && n.value >= 2 * GB) r = ['check', 'Large video. If deleted, it does not come back. Confirm that a backup exists before deleting.'];
         }
         if (r) { out.push({ n, conf: r[0], why: r[1] }); return; }
       }
