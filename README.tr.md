@@ -3,14 +3,42 @@
 
 DiscBubble, Windows diskini dolduran şeyleri yakınlaştırılabilir baloncuklar olarak gösterir, neyin silinmesinin güvenli olduğunu önerir ve kullanılmayan sürücü (driver) paketlerini temizler. Kendi bilgisayarım için yaptığım kişisel bir araçtır.
 
-<p align="center"><img src="docs/media/hero.gif" width="860" alt="DiscBubble bir demo diski tarar, klasöre yakınlaşır, dosya türüne göre renklendirir ve önerilen silmeler listesini açar"></p>
+<p align="center"><img src="docs/media/hero.gif" width="860" alt="DiscBubble bir demo diski tarar, güvenlik renklerine geçer, bir modeli silmenin bedelini gösterir ve önerilen silmeler listesini açar"></p>
 
 ## Ne yapar
 
 - **Baloncuk görünümü.** Her klasör ve dosya, disk kullanımıyla orantılı bir daire (canvas üzerinde D3 circle packing). Tıkla yakınlaş, Esc ile yukarı çık.
 - **Üç renk modu.** Güvenlik (güvenle silinebilir, yeniden indirilebilir, kontrol edilmeli, kişisel veri, program, sistem dosyası, sınıflandırılmamış), dosya türü ve önem. Her güvenlik kademesinde "Risk yok"tan "Kritik"e kadar bir risk düzeyi gösterilir.
-- **Temizlik önerileri.** Geçici dosya, önbellek, `node_modules`, büyük arşiv ve video için kural tabanlı liste; her öneride gerekçe var. Model depoları, paket önbellekleri ve `node_modules` "Yeniden indirilebilir" olarak işaretlenir ve silmenin somut etkisi yazılır (ör. model adı, ne kadarının yeniden indirileceği ve bu sürede hangi araçların çalışmayacağı); rozet Güvenli ve Yeniden indirilebilir toplamlarını ayrı gösterir. Yeniden indirilebilir öğeler varsayılan olarak Geri Dönüşüm Kutusu'na gider. Silme Geri Dönüşüm Kutusu'na ya da kalıcı olur; kilitli klasörde hangi programın tuttuğu söylenir (Windows Restart Manager).
+- **Temizlik önerileri.** Geçici dosya, önbellek, model deposu, `node_modules`, büyük arşiv ve video için kural tabanlı liste. Her öğe silinirse ne olacağını söyler. Kilitli klasörde hangi programın tuttuğu söylenir (Windows Restart Manager).
 - **Sürücüler sekmesi.** Driver Store'daki eski ve kullanılmayan üçüncü taraf paketleri bulur, `pnputil` ile siler (`/force` yok, kullanımdaki paketi Windows reddeder).
+
+## Güvenlik kademeleri
+
+<p align="center"><img src="docs/media/tiers.gif" width="860" alt="Üç baloncuğun üzerine gelinir: bir Hugging Face modeli (Re-downloadable, Low risk), bir geçici günlük dosyası (Safe to delete, No risk) ve büyük bir video (Review first, Medium risk); her ipucunda If deleted cümlesi"></p>
+
+Arayüz İngilizcedir; kademe ve risk adları arayüzdeki gibi yazıldı.
+
+| Kademe | Risk | Tipik içerik | Silinirse |
+|---|---|---|---|
+| Safe to delete | No risk | Geçici dosyalar, GPU ve tarayıcı önbellekleri, günlükler | Gerektiğinde kendiliğinden yeniden oluşur |
+| Re-downloadable | Low risk | Modeller, paket depoları, `node_modules`, sanal ortamlar | Yeniden indirilir ya da kurulur; o zamana kadar ilgili araç çalışmaz |
+| Review first | Medium risk | Büyük oyunlar, disk kalıpları, arşivler, videolar, tanınmayan önbellekler | Yeniden indirilmeden ya da yedekten dönülmeden geri gelmez |
+| Personal data | High risk | Belgeler, fotoğraflar, projeler | Yalnız yedekten geri alınır |
+| Program | High risk | Kurulu uygulamalar | Uygulama bozulur; onun yerine Ayarlar'dan kaldır |
+| System file | Critical | Windows ve sistem dosyaları | Windows açılmayabilir ya da düzgün çalışmayabilir |
+| Unclassified | Unknown | Tanınmayan içerik | Etkisi bilinmez; önce içeriğe bak |
+
+İpucu kademeyi, risk düzeyini ve somut sonucu söyler, ör. "If deleted, 17.1 GB is downloaded again (meshforge/shape3d-2). Tools that use this model will not work until the download completes." Kurallar `public/classify.js` içinde.
+
+<p align="center"><img src="docs/media/safety-scale.png" width="860" alt="Güvenlik renklerinde ana görünüm; yedi kademeli lejant ve kademe başına boyut"></p>
+
+## Önerilen silmeler
+
+<p align="center"><img src="docs/media/suggestions.png" width="860" alt="Suggested deletions penceresi: her öğede kademe, risk düzeyi, yol, yaş ve silmenin sonucu"></p>
+
+**Suggested deletions** rozeti Safe ve Re-downloadable alanı ayrı toplar. Pencerede Safe öğeler kalıcı silinir; Re-downloadable ve daha riskli öğeler Geri Dönüşüm Kutusu'na gider ve onay kutusu silmenin bedelini tekrar yazar.
+
+<p align="center"><img src="docs/media/recycle.gif" width="860" alt="Pencerede Re-downloadable bir model işaretlenir, Move to Recycle Bin'e basılır, sonucu yazan onay okunur, sonra Cancel"></p>
 
 ## Nasıl çalışır
 
@@ -34,8 +62,8 @@ Gerekenler: Windows, Node.js ve tarayıcı için Rust (`cargo`).
 ```
 npm install
 cd scanner-rs && cargo build --release && cd ..
-mkdir bin && copy scanner-rs	arget
-eleaseubblescan.exe binnpm start
+mkdir bin && copy scanner-rs\target\release\bubblescan.exe bin\
+npm start
 ```
 
 ## Kullanım

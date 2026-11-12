@@ -3,14 +3,40 @@
 
 DiscBubble shows what fills a Windows disk as zoomable bubbles, suggests what is safe to delete, and cleans up unused driver packages. It is a personal tool built for my own machine.
 
-<p align="center"><img src="docs/media/hero.gif" width="860" alt="DiscBubble scans a demo drive, zooms into a folder, recolors by file type and opens the suggested deletions list"></p>
+<p align="center"><img src="docs/media/hero.gif" width="860" alt="DiscBubble scans a demo drive, switches to the safety colors, shows what deleting a model costs and opens the suggested deletions list"></p>
 
 ## What it does
 
 - **Bubble view.** Every folder and file is a circle sized by its disk usage (D3 circle packing on a canvas). Click to zoom in, Esc to go up.
 - **Three color modes.** Safety (safe to delete, re-downloadable, review first, personal data, program, system file, unclassified), file type, and importance. Each safety tier shows a risk level, from "No risk" to "Critical".
-- **Cleanup suggestions.** Rule-based list of temp files, caches, `node_modules`, large archives and videos, with a reason for each. Model stores, package caches and `node_modules` are marked "Re-downloadable" with the concrete effect of deleting them (for example the model name, how much is downloaded again and which tools stop working until then), and the badge totals Safe and Re-downloadable separately. Re-downloadable items go to the Recycle Bin by default. Deletion goes to the Recycle Bin or is permanent, and a locked folder reports which program holds it (Windows Restart Manager).
+- **Cleanup suggestions.** Rule-based list of temp files, caches, model stores, `node_modules`, large archives and videos. Each item states what happens if it is deleted. A locked folder reports which program holds it (Windows Restart Manager).
 - **Drivers tab.** Finds old and unused third-party driver packages in the Driver Store and removes them with `pnputil` (no `/force`, Windows refuses packages in use).
+
+## Safety tiers
+
+<p align="center"><img src="docs/media/tiers.gif" width="860" alt="Hovering three bubbles: a Hugging Face model (Re-downloadable, Low risk), a temp log (Safe to delete, No risk) and a large video (Review first, Medium risk), each tooltip with its If deleted sentence"></p>
+
+| Tier | Risk | Typical content | If deleted |
+|---|---|---|---|
+| Safe to delete | No risk | Temp files, GPU and browser caches, logs | Recreated automatically when needed |
+| Re-downloadable | Low risk | Models, package stores, `node_modules`, virtual environments | Downloaded or reinstalled again; the related tool does not work until then |
+| Review first | Medium risk | Large games, disk images, archives, videos, unrecognized caches | Gone unless downloaded again or restored from a backup |
+| Personal data | High risk | Documents, photos, projects | Only restorable from a backup |
+| Program | High risk | Installed applications | Breaks the application; uninstall it from Settings instead |
+| System file | Critical | Windows and system files | Windows may fail to start or work correctly |
+| Unclassified | Unknown | Unrecognized content | Unknown; inspect the contents first |
+
+The tooltip names the tier, its risk level and the concrete consequence, for example "If deleted, 17.1 GB is downloaded again (meshforge/shape3d-2). Tools that use this model will not work until the download completes." Rules live in `public/classify.js`.
+
+<p align="center"><img src="docs/media/safety-scale.png" width="860" alt="Main view in Safety colors with the seven-tier legend and sizes per tier"></p>
+
+## Suggested deletions
+
+<p align="center"><img src="docs/media/suggestions.png" width="860" alt="Suggested deletions dialog: each item with tier, risk level, path, age and the consequence of deleting it"></p>
+
+The **Suggested deletions** badge totals Safe and Re-downloadable space separately. In the dialog, Safe items are deleted permanently; Re-downloadable and riskier items go to the Recycle Bin, and the confirmation repeats what deleting them costs.
+
+<p align="center"><img src="docs/media/recycle.gif" width="860" alt="Ticking a Re-downloadable model in the dialog, pressing Move to Recycle Bin, reading the confirmation with the consequence, then Cancel"></p>
 
 ## How it works
 

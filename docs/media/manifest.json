@@ -1,6 +1,178 @@
-{"varliklar":[
-{"dosya":"hero.gif","tur":"gif","komut":"playwright kayit (demo agaci, bubblescan walk) + hyperframes render; 2026-10-22 ffmpeg fps=12 max_colors=96 (<=5 MB)","tarih":"2026-10-22","boyut":4494801},
-{"dosya":"banner.png","tur":"png","komut":"headless chrome screenshot","tarih":"2026-10-20"},
-{"dosya":"architecture.svg","tur":"svg","komut":"elle","tarih":"2026-10-20"},
-{"dosya":"bench.svg","tur":"svg","komut":"node bench/scan-bench.cjs 7 60000","tarih":"2026-10-20"},
-{"dosya":"data/scan-bench.json","tur":"json","komut":"node bench/scan-bench.cjs 7 60000","tarih":"2026-10-20"}]}
+{
+ "varliklar": [
+  {
+   "dosya": "hero.gif",
+   "tur": "gif",
+   "kaynaklar": [
+    {
+     "dosya": "public/classify.js",
+     "sha256": "5307a88c53dc5cc0409b7e9b9c2c3787481c3f3c608079066aaa2e53d131db1f"
+    },
+    {
+     "dosya": "public/app.js",
+     "sha256": "7d9695e6b9b6debc7fe263fc996d0db964f855c3ba19dbf4ac896fc1ebc71f29"
+    },
+    {
+     "dosya": "public/index.html",
+     "sha256": "5987e70d076a00b181c7411fc3cf5182c4f3416cf38cc9785468ef5ea5e29a5c"
+    },
+    {
+     "dosya": "public/style.css",
+     "sha256": "0a1e3b237b285ad73ca46ef3b99217fe0251e95c363c43d32f1a66183488a15a"
+    }
+   ],
+   "komut": "playwright kayit (.vitrin/kayit/kaydet.mjs, demo agaci X: = .vitrin/demo, bubblescan walk, shim.js silme/cop saplı) + hyperframes@0.8.171 render (hf/hero) + ffmpeg fps=15 max_colors=128",
+   "tarih": "2026-11-12",
+   "boyut": 4232225
+  },
+  {
+   "dosya": "tiers.gif",
+   "tur": "gif",
+   "kaynaklar": [
+    {
+     "dosya": "public/classify.js",
+     "sha256": "5307a88c53dc5cc0409b7e9b9c2c3787481c3f3c608079066aaa2e53d131db1f"
+    },
+    {
+     "dosya": "public/app.js",
+     "sha256": "7d9695e6b9b6debc7fe263fc996d0db964f855c3ba19dbf4ac896fc1ebc71f29"
+    },
+    {
+     "dosya": "public/index.html",
+     "sha256": "5987e70d076a00b181c7411fc3cf5182c4f3416cf38cc9785468ef5ea5e29a5c"
+    },
+    {
+     "dosya": "public/style.css",
+     "sha256": "0a1e3b237b285ad73ca46ef3b99217fe0251e95c363c43d32f1a66183488a15a"
+    }
+   ],
+   "komut": "playwright kayit (.vitrin/kayit/kaydet.mjs, demo agaci X: = .vitrin/demo, bubblescan walk, shim.js silme/cop saplı) + ffmpeg -ss 2.4 crop=960:540:300:110 fps=15 max_colors=128 (HyperFrames yok)",
+   "tarih": "2026-11-12",
+   "boyut": 3066929
+  },
+  {
+   "dosya": "recycle.gif",
+   "tur": "gif",
+   "kaynaklar": [
+    {
+     "dosya": "public/classify.js",
+     "sha256": "5307a88c53dc5cc0409b7e9b9c2c3787481c3f3c608079066aaa2e53d131db1f"
+    },
+    {
+     "dosya": "public/app.js",
+     "sha256": "7d9695e6b9b6debc7fe263fc996d0db964f855c3ba19dbf4ac896fc1ebc71f29"
+    },
+    {
+     "dosya": "public/index.html",
+     "sha256": "5987e70d076a00b181c7411fc3cf5182c4f3416cf38cc9785468ef5ea5e29a5c"
+    },
+    {
+     "dosya": "public/style.css",
+     "sha256": "0a1e3b237b285ad73ca46ef3b99217fe0251e95c363c43d32f1a66183488a15a"
+    }
+   ],
+   "komut": "playwright kayit (.vitrin/kayit/kaydet.mjs, demo agaci X: = .vitrin/demo, bubblescan walk, shim.js silme/cop saplı) 960x540 + ffmpeg -ss 2.6 fps=15 max_colors=128 (HyperFrames yok); yalniz Cancel",
+   "tarih": "2026-11-12",
+   "boyut": 3335378
+  },
+  {
+   "dosya": "safety-scale.png",
+   "tur": "png",
+   "kaynaklar": [
+    {
+     "dosya": "public/classify.js",
+     "sha256": "5307a88c53dc5cc0409b7e9b9c2c3787481c3f3c608079066aaa2e53d131db1f"
+    },
+    {
+     "dosya": "public/app.js",
+     "sha256": "7d9695e6b9b6debc7fe263fc996d0db964f855c3ba19dbf4ac896fc1ebc71f29"
+    },
+    {
+     "dosya": "public/index.html",
+     "sha256": "5987e70d076a00b181c7411fc3cf5182c4f3416cf38cc9785468ef5ea5e29a5c"
+    },
+    {
+     "dosya": "public/style.css",
+     "sha256": "0a1e3b237b285ad73ca46ef3b99217fe0251e95c363c43d32f1a66183488a15a"
+    }
+   ],
+   "komut": "playwright screenshot 1600x1000 @1.2x (kaydet.mjs)",
+   "tarih": "2026-11-12",
+   "boyut": 433181
+  },
+  {
+   "dosya": "suggestions.png",
+   "tur": "png",
+   "kaynaklar": [
+    {
+     "dosya": "public/classify.js",
+     "sha256": "5307a88c53dc5cc0409b7e9b9c2c3787481c3f3c608079066aaa2e53d131db1f"
+    },
+    {
+     "dosya": "public/app.js",
+     "sha256": "7d9695e6b9b6debc7fe263fc996d0db964f855c3ba19dbf4ac896fc1ebc71f29"
+    },
+    {
+     "dosya": "public/index.html",
+     "sha256": "5987e70d076a00b181c7411fc3cf5182c4f3416cf38cc9785468ef5ea5e29a5c"
+    },
+    {
+     "dosya": "public/style.css",
+     "sha256": "0a1e3b237b285ad73ca46ef3b99217fe0251e95c363c43d32f1a66183488a15a"
+    }
+   ],
+   "komut": "playwright screenshot 1280x720 @1.5x (kaydet.mjs)",
+   "tarih": "2026-11-12",
+   "boyut": 308539
+  },
+  {
+   "dosya": "confirm.png",
+   "tur": "png",
+   "kaynaklar": [
+    {
+     "dosya": "public/classify.js",
+     "sha256": "5307a88c53dc5cc0409b7e9b9c2c3787481c3f3c608079066aaa2e53d131db1f"
+    },
+    {
+     "dosya": "public/app.js",
+     "sha256": "7d9695e6b9b6debc7fe263fc996d0db964f855c3ba19dbf4ac896fc1ebc71f29"
+    },
+    {
+     "dosya": "public/index.html",
+     "sha256": "5987e70d076a00b181c7411fc3cf5182c4f3416cf38cc9785468ef5ea5e29a5c"
+    },
+    {
+     "dosya": "public/style.css",
+     "sha256": "0a1e3b237b285ad73ca46ef3b99217fe0251e95c363c43d32f1a66183488a15a"
+    }
+   ],
+   "komut": "playwright screenshot 1280x720 @1.5x (kaydet.mjs); onay penceresi, Cancel ile kapatildi",
+   "tarih": "2026-11-12",
+   "boyut": 246014
+  },
+  {
+   "dosya": "banner.png",
+   "tur": "png",
+   "komut": "headless chrome screenshot",
+   "tarih": "2026-10-20"
+  },
+  {
+   "dosya": "architecture.svg",
+   "tur": "svg",
+   "komut": "elle",
+   "tarih": "2026-10-20"
+  },
+  {
+   "dosya": "bench.svg",
+   "tur": "svg",
+   "komut": "node bench/scan-bench.cjs 7 60000",
+   "tarih": "2026-10-20"
+  },
+  {
+   "dosya": "data/scan-bench.json",
+   "tur": "json",
+   "komut": "node bench/scan-bench.cjs 7 60000",
+   "tarih": "2026-10-20"
+  }
+ ]
+}
