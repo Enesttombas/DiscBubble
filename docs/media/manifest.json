@@ -10,7 +10,7 @@
     },
     {
      "dosya": "public/app.js",
-     "sha256": "7d9695e6b9b6debc7fe263fc996d0db964f855c3ba19dbf4ac896fc1ebc71f29"
+     "sha256": "8fc36e426ae59ed780a574f726ed2d8fabc2201cbaed95fc587017f8e157287b"
     },
     {
      "dosya": "public/index.html",
@@ -18,12 +18,12 @@
     },
     {
      "dosya": "public/style.css",
-     "sha256": "0a1e3b237b285ad73ca46ef3b99217fe0251e95c363c43d32f1a66183488a15a"
+     "sha256": "228fa754f9de242986565d41ea8868afd60011be86fef106caa3fea3d8bef5d1"
     }
    ],
    "komut": "playwright kayit (.vitrin/kayit/kaydet.mjs, demo agaci X: = .vitrin/demo, bubblescan walk, shim.js silme/cop saplı) + hyperframes@0.8.171 render (hf/hero) + ffmpeg fps=15 max_colors=128",
    "tarih": "2026-11-12",
-   "boyut": 4232225
+   "boyut": 4441520
   },
   {
    "dosya": "tiers.gif",
@@ -35,7 +35,7 @@
     },
     {
      "dosya": "public/app.js",
-     "sha256": "7d9695e6b9b6debc7fe263fc996d0db964f855c3ba19dbf4ac896fc1ebc71f29"
+     "sha256": "8fc36e426ae59ed780a574f726ed2d8fabc2201cbaed95fc587017f8e157287b"
     },
     {
      "dosya": "public/index.html",
@@ -43,12 +43,12 @@
     },
     {
      "dosya": "public/style.css",
-     "sha256": "0a1e3b237b285ad73ca46ef3b99217fe0251e95c363c43d32f1a66183488a15a"
+     "sha256": "228fa754f9de242986565d41ea8868afd60011be86fef106caa3fea3d8bef5d1"
     }
    ],
    "komut": "playwright kayit (.vitrin/kayit/kaydet.mjs, demo agaci X: = .vitrin/demo, bubblescan walk, shim.js silme/cop saplı) + ffmpeg -ss 2.4 crop=960:540:300:110 fps=15 max_colors=128 (HyperFrames yok)",
    "tarih": "2026-11-12",
-   "boyut": 3066929
+   "boyut": 2688819
   },
   {
    "dosya": "recycle.gif",
@@ -60,7 +60,7 @@
     },
     {
      "dosya": "public/app.js",
-     "sha256": "7d9695e6b9b6debc7fe263fc996d0db964f855c3ba19dbf4ac896fc1ebc71f29"
+     "sha256": "8fc36e426ae59ed780a574f726ed2d8fabc2201cbaed95fc587017f8e157287b"
     },
     {
      "dosya": "public/index.html",
@@ -68,12 +68,12 @@
     },
     {
      "dosya": "public/style.css",
-     "sha256": "0a1e3b237b285ad73ca46ef3b99217fe0251e95c363c43d32f1a66183488a15a"
+     "sha256": "228fa754f9de242986565d41ea8868afd60011be86fef106caa3fea3d8bef5d1"
     }
    ],
    "komut": "playwright kayit (.vitrin/kayit/kaydet.mjs, demo agaci X: = .vitrin/demo, bubblescan walk, shim.js silme/cop saplı) 960x540 + ffmpeg -ss 2.6 fps=15 max_colors=128 (HyperFrames yok); yalniz Cancel",
    "tarih": "2026-11-12",
-   "boyut": 3335378
+   "boyut": 3305713
   },
   {
    "dosya": "safety-scale.png",
@@ -85,7 +85,7 @@
     },
     {
      "dosya": "public/app.js",
-     "sha256": "7d9695e6b9b6debc7fe263fc996d0db964f855c3ba19dbf4ac896fc1ebc71f29"
+     "sha256": "8fc36e426ae59ed780a574f726ed2d8fabc2201cbaed95fc587017f8e157287b"
     },
     {
      "dosya": "public/index.html",
@@ -93,12 +93,12 @@
     },
     {
      "dosya": "public/style.css",
-     "sha256": "0a1e3b237b285ad73ca46ef3b99217fe0251e95c363c43d32f1a66183488a15a"
+     "sha256": "228fa754f9de242986565d41ea8868afd60011be86fef106caa3fea3d8bef5d1"
     }
    ],
    "komut": "playwright screenshot 1600x1000 @1.2x (kaydet.mjs)",
    "tarih": "2026-11-12",
-   "boyut": 433181
+   "boyut": 433400
   },
   {
    "dosya": "suggestions.png",
@@ -110,7 +110,7 @@
     },
     {
      "dosya": "public/app.js",
-     "sha256": "7d9695e6b9b6debc7fe263fc996d0db964f855c3ba19dbf4ac896fc1ebc71f29"
+     "sha256": "8fc36e426ae59ed780a574f726ed2d8fabc2201cbaed95fc587017f8e157287b"
     },
     {
      "dosya": "public/index.html",
@@ -118,12 +118,12 @@
     },
     {
      "dosya": "public/style.css",
-     "sha256": "0a1e3b237b285ad73ca46ef3b99217fe0251e95c363c43d32f1a66183488a15a"
+     "sha256": "228fa754f9de242986565d41ea8868afd60011be86fef106caa3fea3d8bef5d1"
     }
    ],
    "komut": "playwright screenshot 1280x720 @1.5x (kaydet.mjs)",
    "tarih": "2026-11-12",
-   "boyut": 308539
+   "boyut": 299125
   },
   {
    "dosya": "confirm.png",
@@ -135,7 +135,7 @@
     },
     {
      "dosya": "public/app.js",
-     "sha256": "7d9695e6b9b6debc7fe263fc996d0db964f855c3ba19dbf4ac896fc1ebc71f29"
+     "sha256": "8fc36e426ae59ed780a574f726ed2d8fabc2201cbaed95fc587017f8e157287b"
     },
     {
      "dosya": "public/index.html",
@@ -143,12 +143,12 @@
     },
     {
      "dosya": "public/style.css",
-     "sha256": "0a1e3b237b285ad73ca46ef3b99217fe0251e95c363c43d32f1a66183488a15a"
+     "sha256": "228fa754f9de242986565d41ea8868afd60011be86fef106caa3fea3d8bef5d1"
     }
    ],
    "komut": "playwright screenshot 1280x720 @1.5x (kaydet.mjs); onay penceresi, Cancel ile kapatildi",
    "tarih": "2026-11-12",
-   "boyut": 246014
+   "boyut": 245687
   },
   {
    "dosya": "banner.png",

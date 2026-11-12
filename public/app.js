@@ -308,10 +308,10 @@ async function drvRemove() {
 // ---- "Suggested deletions" dialog: detailed list, show in Explorer, bulk permanent delete ----
 let dlgSel = new Set();
 const dlgOpen = () => $('sugdlg').classList.contains('on');
-const EFFECT = {
-  safe: 'If deleted: nothing breaks. Apps recreate it when needed.',
-  cost: 'If deleted: it has to be downloaded or reinstalled again; the related tool does not work until then. Moved to the Recycle Bin.',
-  check: 'If deleted: it does not come back. If needed (game, image, video), it has to be downloaded again or restored from a backup.',
+// The row's muted second line only says how the item is removed; the consequence sentence appears once, in .sdwhy.
+const HOW = {
+  trash: 'Moved to the Recycle Bin; can be restored until the bin is emptied.',
+  remove: 'Deleted permanently; does not go to the Recycle Bin.',
 };
 // Badge: safe and re-downloadable are totalled separately; items to review appear only in the tooltip.
 function updateSugBtn() {
@@ -346,13 +346,11 @@ function renderSugDlg() {
     li.querySelector('b').textContent = n.data.n + (isDir(n) ? ' (folder)' : '');
     li.querySelector('.sdsz').textContent = fmt(n.value);
     li.querySelector('.sdpath').textContent = pathOf(n);
-    li.querySelector('.sdbadges').innerHTML = '<span class="cf cf-' + s.conf + '">' + CF[s.conf] + '</span>' +
-      '<span class="sdtag"><i style="background:' + SAFE[n.sf].col + '"></i>' + SAFE[n.sf].name + ' · ' + SAFE[n.sf].risk + '</span>' +
+    li.querySelector('.sdbadges').innerHTML = '<span class="cf cf-' + s.conf + '">' + SAFE[n.sf].name + ' · ' + SAFE[n.sf].risk + '</span>' +
       '<span class="sdtag"><i style="background:' + g.col + '"></i>' + g.name + (n.cat ? ' · ' + n.cat.name : '') + '</span>' +
-      '<span class="sdtag">Importance: ' + (s.conf === 'safe' ? 'low' : 'medium') + '</span>' +
       (n.data.m ? '<span class="sdtag">' + ageText(n.data.m, Date.now() / 1000) + '</span>' : '');
     li.querySelector('.sdwhy').textContent = s.why;
-    li.querySelector('.sdeff').textContent = EFFECT[s.conf];
+    li.querySelector('.sdeff').textContent = HOW[sugKind(n)];
     const cb = li.querySelector('input'); cb.checked = dlgSel.has(n);
     const flip = () => { dlgSel.has(n) ? dlgSel.delete(n) : dlgSel.add(n); cb.checked = dlgSel.has(n); li.classList.toggle('sel', dlgSel.has(n)); dlgFoot(); };
     li.onclick = e => { if (!e.target.closest('.sdrev') && e.target !== cb) flip(); };
