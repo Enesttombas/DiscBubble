@@ -8,8 +8,8 @@ DiscBubble shows what fills a Windows disk as zoomable bubbles, suggests what is
 ## What it does
 
 - **Bubble view.** Every folder and file is a circle sized by its disk usage (D3 circle packing on a canvas). Click to zoom in, Esc to go up.
-- **Three color modes.** Safety (safe to delete, review first, personal, program, do not touch), file type, and importance.
-- **Cleanup suggestions.** Rule-based list of temp files, caches, `node_modules`, large archives and videos, with a reason for each. Deletion goes to the Recycle Bin or is permanent, and a locked folder reports which program holds it (Windows Restart Manager).
+- **Three color modes.** Safety (safe to delete, comes back at a cost, review first, personal, program, do not touch), file type, and importance.
+- **Cleanup suggestions.** Rule-based list of temp files, caches, `node_modules`, large archives and videos, with a reason for each. Model stores, package caches and `node_modules` are marked "comes back, at a cost" with what you lose (for example the model name and how much is downloaded again), and the badge totals Safe and Costly separately. Costly items go to the Recycle Bin by default. Deletion goes to the Recycle Bin or is permanent, and a locked folder reports which program holds it (Windows Restart Manager).
 - **Drivers tab.** Finds old and unused third-party driver packages in the Driver Store and removes them with `pnputil` (no `/force`, Windows refuses packages in use).
 
 ## How it works
@@ -47,7 +47,7 @@ Pick a drive (or relaunch as administrator for the fast `mft` scan), click bubbl
 - Windows only. The Electron app runs `mft` mode only after a UAC prompt; without it, scans use `walk`.
 - Scanning, deleting and driver cleanup only work inside the Electron app; `server.js` is legacy and not connected to the current UI.
 - Cleanup rules are heuristics. Review the list before deleting; permanent deletion cannot be undone.
-- There are no automated tests beyond `npm test` (a syntax check).
+- `npm test` runs a syntax check plus unit tests of the classification (`test/`, fake tree data only). `node scripts/classify-path.js <folder>` prints the tiers for a real folder without deleting anything.
 
 ## License
 

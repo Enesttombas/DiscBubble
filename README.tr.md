@@ -8,8 +8,8 @@ DiscBubble, Windows diskini dolduran şeyleri yakınlaştırılabilir baloncukla
 ## Ne yapar
 
 - **Baloncuk görünümü.** Her klasör ve dosya, disk kullanımıyla orantılı bir daire (canvas üzerinde D3 circle packing). Tıkla yakınlaş, Esc ile yukarı çık.
-- **Üç renk modu.** Güvenlik (silinebilir, önce bak, kişisel, program, dokunma), dosya türü ve önem.
-- **Temizlik önerileri.** Geçici dosya, önbellek, `node_modules`, büyük arşiv ve video için kural tabanlı liste; her öneride gerekçe var. Silme Geri Dönüşüm Kutusu'na ya da kalıcı olur; kilitli klasörde hangi programın tuttuğu söylenir (Windows Restart Manager).
+- **Üç renk modu.** Güvenlik (silinebilir, geri gelir ama bedelli, önce bak, kişisel, program, dokunma), dosya türü ve önem.
+- **Temizlik önerileri.** Geçici dosya, önbellek, `node_modules`, büyük arşiv ve video için kural tabanlı liste; her öneride gerekçe var. Model depoları, paket önbellekleri ve `node_modules` "geri gelir, bedelli" olarak işaretlenir ve neyin kaybedileceği yazılır (ör. model adı ve ne kadarının yeniden ineceği); rozet Güvenli ve Bedelli toplamlarını ayrı gösterir. Bedelli öğeler varsayılan olarak Geri Dönüşüm Kutusu'na gider. Silme Geri Dönüşüm Kutusu'na ya da kalıcı olur; kilitli klasörde hangi programın tuttuğu söylenir (Windows Restart Manager).
 - **Sürücüler sekmesi.** Driver Store'daki eski ve kullanılmayan üçüncü taraf paketleri bulur, `pnputil` ile siler (`/force` yok, kullanımdaki paketi Windows reddeder).
 
 ## Nasıl çalışır
@@ -46,7 +46,7 @@ Bir sürücü seç (hızlı `mft` taraması için yönetici olarak yeniden başl
 - Yalnız Windows. Electron uygulaması `mft` modunu ancak UAC onayıyla çalıştırır; onaysız taramalar `walk` ile yapılır.
 - Tarama, silme ve sürücü temizliği yalnız Electron uygulamasında çalışır; `server.js` eskidir, güncel arayüze bağlı değildir.
 - Temizlik kuralları sezgiseldir. Silmeden önce listeyi gözden geçir; kalıcı silme geri alınamaz.
-- Otomatik test yok; `npm test` yalnız sözdizimi denetimidir.
+- `npm test` sözdizimi denetimine ek olarak sınıflandırmanın birim testlerini çalıştırır (`test/`, yalnız sahte ağaç verisi). `node scripts/classify-path.js <klasör>` gerçek bir klasörün kademelerini hiçbir şey silmeden yazdırır.
 
 ## Lisans
 

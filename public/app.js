@@ -4,127 +4,27 @@ const $ = id => document.getElementById(id);
 const cv = $('cv'), ctx = cv.getContext('2d');
 const BG = '#0c0d11';
 
-const CATS = [
-  { id: 'video', name: 'Video', col: '#ff7a7a', ext: 'mp4 mkv avi mov wmv webm m4v flv' },
-  { id: 'image', name: 'Image', col: '#ffb85e', ext: 'jpg jpeg png gif bmp webp heic svg raw psd tif tiff ico' },
-  { id: 'audio', name: 'Audio', col: '#c78bff', ext: 'mp3 wav flac m4a ogg aac wma' },
-  { id: 'vm', name: 'Virtual machine', col: '#4fa3ff', ext: 'vhd vhdx vmdk vdi qcow2 ova' },
-  { id: 'iso', name: 'Disk image', col: '#5ec8ff', ext: 'iso img wim esd' },
-  { id: 'arch', name: 'Archive', col: '#3fd0d4', ext: 'zip rar 7z tar gz xz cab' },
-  { id: 'backup', name: 'Backup', col: '#9fd36b', ext: 'bak bkp old' },
-  { id: 'doc', name: 'Document', col: '#6fe3a0', ext: 'pdf doc docx xls xlsx ppt pptx txt md csv rtf epub' },
-  { id: 'code', name: 'Code / data', col: '#8a9bff', ext: 'js ts py cs cpp c h java rs go json html css xml sql ipynb map' },
-  { id: 'db', name: 'Database', col: '#6a7dff', ext: 'db sqlite sqlite3 mdf ldf' },
-  { id: 'exe', name: 'Program', col: '#ff8fb5', ext: 'exe msi msix' },
-  { id: 'lib', name: 'Library / driver', col: '#ff6fa0', ext: 'dll sys pdb obj lib node so' },
-  { id: 'gamefile', name: 'Game data', col: '#d99bff', ext: '' },
-  { id: 'log', name: 'Log / dump', col: '#e0c070', ext: 'log dmp etl' },
-  { id: 'cache', name: 'Cache', col: '#ffa24d', ext: '' },
-  { id: 'devcache', name: 'Developer cache', col: '#ff9a6b', ext: '' },
-  { id: 'update', name: 'Windows leftovers', col: '#ff8a5e', ext: '' },
-  { id: 'tmp', name: 'Temp file', col: '#ffc26b', ext: 'tmp' },
-  { id: 'other', name: 'Other', col: '#8d96aa', ext: '' },
-  { id: 'small', name: 'Small items', col: '#4a5062', ext: '' },
-];
-const EXT = {};
-CATS.forEach(c => c.ext.split(' ').forEach(e => e && (EXT[e] = c)));
-const CAT = Object.fromEntries(CATS.map(c => [c.id, c]));
-// Type: extension + path/importance group. n.lp and n.grp must be computed first.
-function catOf(n) {
-  if (n.data.o) return CAT.small;
-  const nm = n.data.n.toLowerCase(), ext = nm.includes('.') ? nm.slice(nm.lastIndexOf('.') + 1) : '', k = EXT[ext];
-  if (n.grp === 'temp') {
-    if (/softwaredistribution|windows\.old|\\\$windows\.~/.test(n.lp)) return CAT.update;
-    if (/node_modules|\\\.gradle|\\\.nuget|\\\.cargo|__pycache__|npm-cache|\\\.npm\\/.test(n.lp)) return CAT.devcache;
-    if (k && k.id === 'log') return CAT.log;
-    return /cache/.test(n.lp) ? CAT.cache : CAT.tmp;
-  }
-  if (n.grp === 'game' && !k) return CAT.gamefile;
-  return k || CAT.other;
-}
-
-// ---- importance groups (path-based rules; children inherit the parent's group) ----
-const GRP = {
-  system: { name: 'System', col: '#ff6b8b', tag: 'Important · do not touch' },
-  user: { name: 'Personal files', col: '#6fe3a0', tag: 'Important' },
-  app: { name: 'Application', col: '#5ec8ff', tag: 'Normal' },
-  game: { name: 'Game', col: '#c78bff', tag: 'Normal · large, deletable' },
-  temp: { name: 'Unimportant / temp', col: '#ffb85e', tag: 'Unimportant · deletable' },
-  other: { name: 'Other', col: '#8d96aa', tag: 'Unknown' },
-};
-const TEMP_NAMES = new Set(['temp', 'tmp', 'cache', 'caches', 'cache2', 'code cache', 'gpucache', 'crashdumps', '$recycle.bin', 'node_modules',
-  '__pycache__', '.cache', 'prefetch', 'inetcache', 'windows.old', '$windows.~bt', '$windows.~ws', 'webcache', 'shadercache', 'dxcache', 'glcache', 'npm-cache']);
-const GAME_NAMES = new Set(['steamapps', 'steam', 'epic games', 'riot games', 'battle.net', 'ubisoft', 'ubisoft game launcher', 'gog games', 'gog galaxy',
-  'xboxgames', 'games', 'ea games', 'origin games', 'genshin impact', 'minecraft', 'valorant']);
-function ruleGrp(lp, name, isDir) {
-  const ext = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : '';
-  if (TEMP_NAMES.has(name) || (!isDir && (ext === 'tmp' || ext === 'dmp' || ext === 'etl' || ext === 'log'))
-    || /\\softwaredistribution\\download$/.test(lp) || /^[a-z]:\\windows\\logs$/.test(lp)) return 'temp';
-  if (/^[a-z]:\\(windows|system volume information|recovery|boot|config\.msi|msocache|\$[^\\]*)$/.test(lp)
-    || /^[a-z]:\\(pagefile|hiberfil|swapfile)\.sys$/.test(lp) || /\\programdata\\microsoft$/.test(lp)) return 'system';
-  if (GAME_NAMES.has(name)) return 'game';
-  if (/^[a-z]:\\(program files( \(x86\))?|programdata)$/.test(lp) || /\\users\\[^\\]+\\appdata$/.test(lp) || /\\windowsapps$/.test(lp)) return 'app';
-  if (/^[a-z]:\\users\\[^\\]+$/.test(lp)) return 'user';
-  return null;
-}
-// Applies the scanned root's parent folders in order to find the starting group.
-function seedGrp(rootPath) {
-  const parts = rootPath.replace(/[\\/]+$/, '').split('\\');
-  let g = 'other', lp = '';
-  for (let i = 0; i < parts.length - 1; i++) {
-    lp = (lp ? lp + '\\' : '') + parts[i].toLowerCase();
-    g = ruleGrp(lp.length === 2 ? lp + '\\' : lp, parts[i].toLowerCase(), true) || g;
-  }
-  return g;
-}
-// ---- safety scale: deletability color ----
-const SAFE = {
-  safe: { name: 'Safe to delete', col: '#3ddc84', desc: 'Temp files, cache, logs. Apps regenerate them.' },
-  check: { name: 'Review first', col: '#ffa940', desc: "Large games, images, archives, videos. Delete if you don't need them." },
-  keep: { name: 'Personal', col: '#4f9dff', desc: 'Your documents, photos, projects. Consider a backup before deleting.' },
-  prog: { name: 'Program', col: '#b48cff', desc: "Installed app. Don't delete files; uninstall from Settings." },
-  never: { name: 'Do not touch', col: '#ff5252', desc: 'Windows and system files. Deleting them can break your PC.' },
-  unk: { name: 'Unknown', col: '#8d96aa', desc: "Couldn't classify. Don't delete without checking what it is." },
-};
+const { CATS, CAT, GRP, SAFE, fmt, ageText } = Classify;
 const GRPDESC = {
   system: 'Windows, drivers, recovery. Do not touch.',
   user: 'Your user folder: documents, downloads, desktop.',
   app: 'Program Files, AppData: installed apps.',
   game: 'Game libraries; large and re-downloadable.',
-  temp: 'Temp, cache, logs. Deletable.',
+  temp: 'Temp, cache, model and package stores. See the Safety view for the cost.',
   other: 'Unclassified folders.',
 };
 const TURDESC = {
   video: 'Movies, shows, screen recordings', image: 'Photos and graphics', audio: 'Music, voice recordings', vm: 'Virtual disks (VirtualBox, Hyper-V)',
   iso: 'ISO and install images', arch: 'zip, rar, 7z archives', backup: 'Backups (.bak, .old)', doc: 'PDF and Office documents',
   code: 'Source code and data files', db: 'Database files', exe: 'Executable programs', lib: "DLL and driver files; don't delete",
-  gamefile: "Games' own data files", log: 'Logs and crash dumps; deletable', cache: 'Cache; regenerated if deleted',
+  gamefile: "Games' own data files", log: 'Logs and crash dumps; deletable', cache: 'Cache; regenerated if deleted', model: 'Hugging Face, torch, ollama; re-downloaded if deleted',
   devcache: 'node_modules, .gradle etc.; re-downloaded', update: 'Windows update leftovers', tmp: 'Temporary files', other: 'Unclassified files',
 };
-function safeOf(n) {
-  const GB = 1073741824;
-  if (n.grp === 'system') return 'never';
-  if (n.grp === 'temp') return 'safe';
-  if (!n.children && n.cat) {
-    const id = n.cat.id;
-    if (['vm', 'iso', 'arch', 'backup'].includes(id) && n.value >= GB) return 'check';
-    if (id === 'video' && n.value >= 2 * GB) return 'check';
-  }
-  if (n.grp === 'game') return 'check';
-  if (n.grp === 'user') return 'keep';
-  if (n.grp === 'app') return 'prog';
-  return 'unk';
-}
 let colorMode = 'safe', filt = null, stats = { grp: {}, sub: {}, safe: {} }, sugs = [];
 const colorOf = n => (colorMode === 'safe' ? SAFE[n.sf].col : colorMode === 'grp' ? GRP[n.grp].col : n.cat.col);
 const matchF = n => !filt || (filt.kind === 'grp' ? n.grp === filt.id : filt.kind === 'safe' ? n.sf === filt.id : !!n.cat && n.cat.id === filt.id);
 const tintOf = n => (colorMode === 'safe' ? SAFE[n.sf].col : colorMode === 'grp' ? GRP[n.grp].col : n.tint);
 
-const fmt = b => {
-  const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0;
-  while (b >= 1024 && i < 4) { b /= 1024; i++; }
-  return b.toLocaleString('en-US', { maximumFractionDigits: b < 10 && i ? 2 : b < 100 && i ? 1 : 0 }) + ' ' + u[i];
-};
 const ease = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const outBack = t => { const c = 1.4; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
 const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
@@ -178,17 +78,10 @@ function build(tree) {
   treeData = tree;
   const h = d3.hierarchy(tree, d => d.c).sum(d => (d.c && d.c.length ? 0 : d.s)).sort((a, b) => b.value - a.value);
   d3.pack().size([1000, 1000]).padding(3)(h);
-  const seed = seedGrp(tree.n);
-  h.each(n => {
-    n.dl = Math.min(n.depth, 3) * 0.07 + (((n.x * 7 + n.y * 13) % 97) / 97) * 0.35; n.hv = 0;
-    if (!n.parent) { n.lp = n.data.n.toLowerCase(); n.grp = ruleGrp(n.lp.length === 2 ? n.lp + '\\' : n.lp, n.lp, true) || seed; return; }
-    n.lp = n.parent.lp.replace(/\\$/, '') + '\\' + n.data.n.toLowerCase();
-    n.grp = (!n.data.o && ruleGrp(n.lp, n.data.n.toLowerCase(), !!n.children)) || n.parent.grp;
-  });
+  h.each(n => { n.dl = Math.min(n.depth, 3) * 0.07 + (((n.x * 7 + n.y * 13) % 97) / 97) * 0.35; n.hv = 0; });
+  Classify.annotate(h, { now: Date.now() / 1000 }); // lp, grp, cat, sf, why
   stats = { grp: {}, sub: {}, safe: {} };
   h.each(n => {
-    n.cat = n.children ? null : catOf(n);
-    n.sf = safeOf(n);
     stats.safe[n.sf] = (stats.safe[n.sf] || 0) + (n.children ? 0 : n.value);
     if (!n.cat) return;
     stats.sub[n.cat.id] = (stats.sub[n.cat.id] || 0) + n.value;
@@ -203,7 +96,7 @@ function build(tree) {
     for (const k in n.cb) if (k !== 'small' && n.cb[k] > bv) { bv = n.cb[k]; best = k; }
     n.tint = CAT[best].col;
   });
-  sugs = suggest(h);
+  sugs = Classify.suggest(h);
   updateSugBtn();
   root = h; focus = null; prevFocus = null; cands = [];
   view = [h.x, h.y, h.r];
@@ -238,39 +131,8 @@ function renderCrumbs() {
 
 // ---- side panel: multi-select, category filter, suggestions ----
 let sel = new Set(), anchor = -1, sideNodes = [], sideTab = 'dirs';
-const CF = { safe: 'Safe', check: 'Review first' };
-const WHYN = {
-  'node_modules': 'Comes back with npm install',
-  '$recycle.bin': 'Recycle Bin contents',
-  'windows.old': ['check', 'Previous Windows install; deletable if all is fine'],
-  '$windows.~bt': ['check', 'Windows update setup leftover'],
-  '$windows.~ws': ['check', 'Windows update setup leftover'],
-  '__pycache__': 'Python bytecode cache; regenerated automatically',
-  'prefetch': 'Cache; Windows rebuilds it',
-  'crashdumps': "Crash dumps; unneeded unless you're debugging",
-};
-// Rule-based suggestions: the topmost matching node is taken, its children are not visited.
-function suggest(h) {
-  const MB = 1048576, GB = 1024 * MB, out = [];
-  (function w(n) {
-    if (n.data.o) return;
-    if (n.parent) {
-      const nm = n.data.n.toLowerCase(), dir = isDir(n);
-      let r = null;
-      if (n.grp === 'temp' && n.value >= 50 * MB) {
-        const x = WHYN[nm];
-        r = Array.isArray(x) ? x : ['safe', x || (dir ? 'Temp / cache; apps regenerate it' : 'Temp or log file')];
-      } else if (n.grp !== 'system') {
-        if (dir && n.grp === 'game' && n.parent.grp !== 'game' && n.value >= GB) r = ['check', "Game library; re-downloadable from the store, delete if you don't play it"];
-        else if (!dir && ['vm', 'iso', 'arch', 'backup'].includes(n.cat.id) && n.value >= GB) r = ['check', 'Large ' + n.cat.name.toLowerCase() + '; delete if no longer needed'];
-        else if (!dir && n.cat.id === 'video' && n.value >= 2 * GB) r = ['check', 'Large video; check whether you have a backup'];
-      }
-      if (r) { out.push({ n, conf: r[0], why: r[1] }); return; }
-    }
-    (n.children || []).forEach(w);
-  })(h);
-  return out.sort((a, b) => b.n.value - a.n.value).slice(0, 40);
-}
+const CF = { safe: 'Safe', cost: 'Costly', check: 'Review first' };
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 function bigFiles() {
   const out = [];
   root.each(n => { if (!n.children && !n.data.o) out.push(n); });
@@ -362,7 +224,7 @@ function mkRow(ul, c, i, html) {
 }
 const grpSub = c => {
   const g = GRP[c.grp];
-  return `<i style="background:${g.col}"></i>${g.name}${c.cat ? ' · ' + c.cat.name : ''}${c.grp === 'temp' ? ' · deletable' : ''}`;
+  return `<i style="background:${g.col}"></i>${g.name}${c.cat ? ' · ' + c.cat.name : ''}${c.sf === 'safe' || c.sf === 'cost' ? ' · ' + SAFE[c.sf].name.toLowerCase() : ''}`;
 };
 function renderRows(nodes, title, subFn) {
   $('sideTitle').textContent = title;
@@ -376,10 +238,10 @@ function renderRows(nodes, title, subFn) {
   paintSel();
 }
 function renderSug() {
-  const safe = sugs.filter(s => s.conf === 'safe');
-  renderRows(sugs.map(s => s.n), 'Cleanup suggestions', (c, i) => `<b class="cf cf-${sugs[i].conf}">${CF[sugs[i].conf]}</b> ${sugs[i].why}`);
+  const t = Classify.sugTotals(sugs);
+  renderRows(sugs.map(s => s.n), 'Cleanup suggestions', (c, i) => `<b class="cf cf-${sugs[i].conf}">${CF[sugs[i].conf]}</b> ${esc(sugs[i].why)}`);
   $('tools').innerHTML = sugs.length
-    ? `<span>Safe: ${safe.length} items · ${fmt(sumOf(safe.map(s => s.n)))}</span><button onclick="selSafe()">Select safe</button>`
+    ? `<span>Safe: ${t.nSafe} items · ${fmt(t.safe)} · Costly: ${fmt(t.cost)}</span><button onclick="selSafe()">Select safe</button>`
     : '<span>No suggestions, looks clean.</span>';
 }
 // ---- Drivers tab: old / unused driver packages ----
@@ -446,14 +308,18 @@ let dlgSel = new Set();
 const dlgOpen = () => $('sugdlg').classList.contains('on');
 const EFFECT = {
   safe: 'If deleted: no problem. Apps recreate it when needed.',
+  cost: "If deleted: it comes back, at a cost. It has to be re-downloaded or reinstalled, and the tool won't work until then. Moved to the Recycle Bin.",
   check: "If deleted: it won't come back. If needed (game, image, video) you'll have to re-download it or restore from backup.",
 };
+// Badge: safe and costly are totalled separately; items to review appear only in the tooltip.
 function updateSugBtn() {
-  const safe = sugs.filter(s => s.conf === 'safe'), b = $('sugBtn');
+  const t = Classify.sugTotals(sugs), b = $('sugBtn');
   b.hidden = !sugs.length;
-  b.innerHTML = 'Suggested deletions <em>' + sugs.length + ' · ' + fmt(sumOf(sugs.map(s => s.n))) + '</em>';
-  b.title = safe.length + ' safe items: ' + fmt(sumOf(safe.map(s => s.n)));
+  b.innerHTML = 'Suggested deletions <em>Safe ' + fmt(t.safe) + ' · Costly ' + fmt(t.cost) + '</em>';
+  b.title = t.nSafe + ' safe items · ' + t.nCost + ' costly items' + (t.nCheck ? ' · ' + t.nCheck + ' to review (' + fmt(t.check) + ')' : '');
 }
+// Delete method in the suggestions dialog: safe items are deleted permanently, costly and above go to the Recycle Bin.
+const sugKind = n => (n.sf === 'safe' ? 'remove' : 'trash');
 function openSugDlg() {
   if (!sugs.length) return toast('Nothing suggested for deletion');
   dlgSel = new Set(); renderSugDlg(); $('sugdlg').classList.add('on');
@@ -462,13 +328,14 @@ function closeSugDlg() { $('sugdlg').classList.remove('on'); }
 function dlgFoot() {
   const ch = sugs.filter(s => dlgSel.has(s.n));
   $('sdInfo').textContent = ch.length ? ch.length + ' selected · ' + fmt(sumOf(ch.map(s => s.n))) : 'Check the items you want to delete';
-  $('sdDel').textContent = 'Delete permanently' + (ch.length ? ' (' + ch.length + ')' : '');
+  const ks = new Set(ch.map(s => sugKind(s.n)));
+  $('sdDel').textContent = (!ks.size || (ks.size === 1 && ks.has('remove')) ? 'Delete permanently' : ks.size === 1 ? 'Move to Recycle Bin' : 'Delete') + (ch.length ? ' (' + ch.length + ')' : '');
   $('sdDel').disabled = !ch.length;
 }
 function renderSugDlg() {
   const ul = $('sdList'); ul.innerHTML = '';
-  const safe = sugs.filter(s => s.conf === 'safe');
-  $('sdSub').textContent = sugs.length + ' suggestions · ' + fmt(sumOf(sugs.map(s => s.n))) + ' (safe: ' + safe.length + ' · ' + fmt(sumOf(safe.map(s => s.n))) + ')';
+  const t = Classify.sugTotals(sugs);
+  $('sdSub').textContent = sugs.length + ' suggestions · Safe ' + t.nSafe + ' · ' + fmt(t.safe) + ' · Costly ' + t.nCost + ' · ' + fmt(t.cost) + (t.nCheck ? ' · Review ' + t.nCheck + ' · ' + fmt(t.check) : '');
   sugs.forEach(s => {
     const n = s.n, g = GRP[n.grp], li = document.createElement('li');
     li.className = 'sdrow' + (dlgSel.has(n) ? ' sel' : '');
@@ -480,7 +347,8 @@ function renderSugDlg() {
     li.querySelector('.sdbadges').innerHTML = '<span class="cf cf-' + s.conf + '">' + CF[s.conf] + '</span>' +
       '<span class="sdtag"><i style="background:' + SAFE[n.sf].col + '"></i>' + SAFE[n.sf].name + '</span>' +
       '<span class="sdtag"><i style="background:' + g.col + '"></i>' + g.name + (n.cat ? ' · ' + n.cat.name : '') + '</span>' +
-      '<span class="sdtag">Importance: ' + (s.conf === 'safe' ? 'low' : 'medium') + '</span>';
+      '<span class="sdtag">Importance: ' + (s.conf === 'safe' ? 'low' : 'medium') + '</span>' +
+      (n.data.m ? '<span class="sdtag">' + ageText(n.data.m, Date.now() / 1000) + '</span>' : '');
     li.querySelector('.sdwhy').textContent = s.why;
     li.querySelector('.sdeff').textContent = EFFECT[s.conf];
     const cb = li.querySelector('input'); cb.checked = dlgSel.has(n);
@@ -497,7 +365,7 @@ async function dlgDelete() {
   const list = sugs.filter(s => dlgSel.has(s.n)).map(s => s.n);
   if (!list.length) return;
   closeSugDlg();
-  await doRemove(list, 'remove');
+  await doRemove(list, sugKind);
   if (!removing && sugs.length) openSugDlg();
 }
 addEventListener('keydown', e => {
@@ -549,6 +417,8 @@ function showTip(d, e) {
   t.innerHTML = `<b>${d.data.n.replace(/</g, '&lt;')}</b><em>${fmt(d.value)}</em> ${pct ? '· ' + pct : ''}` +
     `<small class="grp"><i style="background:${GRP[d.grp].col}"></i>${GRP[d.grp].name} · ${GRP[d.grp].tag}</small>` +
     `<small class="grp"><i style="background:${SAFE[d.sf].col}"></i>${SAFE[d.sf].name}</small>` +
+    (d.why && d.sf !== 'never' ? `<small>If you delete: ${esc(d.why)}</small>` : '') +
+    (d.data.m ? `<small>Last modified: ${ageText(d.data.m, Date.now() / 1000)}</small>` : '') +
     (isDir(d) ? `<small>${d.children.length} items</small>` : '') + `<small>${pathOf(d).replace(/</g, '&lt;')}</small>`;
   t.classList.add('on');
   if (e) placeTip(e);
@@ -727,17 +597,22 @@ async function refreshDrives() {
   });
 }
 
-function confirmDelete(list, kind) {
-  const one = list.length === 1, tr = kind === 'trash';
-  return confirmBox(tr ? (one ? 'Move to Recycle Bin?' : `Move ${list.length} items to Recycle Bin?`) : one ? 'Delete permanently?' : `Delete ${list.length} items permanently?`,
+function confirmDelete(list, kindOf) {
+  const one = list.length === 1, ks = new Set(list.map(kindOf)), mixed = ks.size > 1, tr = !ks.has('remove');
+  // On costly and higher tiers the "if you delete" sentence shows in the confirmation.
+  const costly = list.filter(n => n.sf !== 'safe' && n.why);
+  const eff = costly.length ? 'If you delete: ' + costly.slice(0, 3).map(n => (one ? '' : n.data.n + ': ') + n.why).join(' · ') + (costly.length > 3 ? ` (+${costly.length - 3} more items)` : '') + '. ' : '';
+  return confirmBox(mixed ? `Delete ${list.length} items?` : tr ? (one ? 'Move to Recycle Bin?' : `Move ${list.length} items to Recycle Bin?`) : one ? 'Delete permanently?' : `Delete ${list.length} items permanently?`,
     one ? list[0].data.n + ' · ' + fmt(list[0].value) + (isDir(list[0]) ? ' · folder' : '') : 'Total ' + fmt(sumOf(list)),
     one ? pathOf(list[0]) : list.slice(0, 4).map(n => n.data.n + ' · ' + fmt(n.value)).join('\n') + (list.length > 4 ? `\nand ${list.length - 4} more items` : ''),
-    tr ? 'You can restore it from the Recycle Bin; space is freed when the bin is emptied.' : 'This item will not go to the Recycle Bin and cannot be restored.');
+    eff + (mixed ? 'Safe items are deleted permanently; costly ones are moved to the Recycle Bin.' : tr ? 'You can restore it from the Recycle Bin; space is freed when the bin is emptied.' : 'This item will not go to the Recycle Bin and cannot be restored.'),
+    mixed ? 'Delete' : tr ? 'Move to Recycle Bin' : 'Delete permanently');
 }
-function confirmBox(title, name, detail, note) {
+function confirmBox(title, name, detail, note, yes) {
   return new Promise(res => {
     const m = $('modal');
     $('mTitle').textContent = title; $('mName').textContent = name; $('mPath').textContent = detail; $('mNote').textContent = note;
+    $('mYes').textContent = yes || 'Delete permanently';
     m.classList.add('on');
     $('mNo').focus();
     const done = v => { m.classList.remove('on'); removeEventListener('keydown', key, true); res(v); };
@@ -787,12 +662,14 @@ function progStart() {
   tick();
 }
 function progHide() { cancelAnimationFrame(progRaf); const p = $('prog'); if (p) p.classList.remove('on'); }
+// kind: 'trash' | 'remove', or a function that picks it per node (suggestions dialog).
 async function doRemove(nodes, kind) {
+  const kindOf = typeof kind === 'function' ? kind : () => kind;
   const busy = new Set([...rq.map(x => x.n), ...(pq ? [pq.cur] : [])]);
   const list = topOnly(nodes.filter(n => n.parent && !n.data.o && !busy.has(n)));
   if (!list.length) return;
-  if (!(await confirmDelete(list, kind))) return toast('Cancelled');
-  list.forEach(n => rq.push({ n, kind }));
+  if (!(await confirmDelete(list, kindOf))) return toast('Cancelled');
+  list.forEach(n => rq.push({ n, kind: kindOf(n) }));
   if (removing) {
     if (pq) { pq.total += list.length; pq.bytesTotal += sumOf(list); progDraw(); }
     return toast(list.length + ' items queued');
@@ -801,7 +678,7 @@ async function doRemove(nodes, kind) {
 }
 async function runQueue() {
   removing = true; rqCancel = false;
-  const ok = [], fail = [];
+  const ok = [], fail = [], kinds = new Set();
   let kind = rq[0].kind;
   pq = { done: 0, total: rq.length, bytesDone: 0, bytesTotal: sumOf(rq.map(x => x.n)), cur: null, kind, t0: 0 };
   while (rq.length) {
@@ -811,7 +688,7 @@ async function runQueue() {
     let r;
     try { r = await native[kind](pathOf(it.n)); } catch (e) { r = { ok: false, error: String(e.message || e) }; }
     if (rqCancel && !r.ok) { fail.push(r.error || 'cancelled'); break; }
-    r.ok ? ok.push(it.n) : fail.push(r.error || 'could not delete');
+    r.ok ? (ok.push(it.n), kinds.add(kind)) : fail.push(r.error || 'could not delete');
     pq.done++; pq.bytesDone += it.n.value;
     if (rqCancel) break;
   }
@@ -819,9 +696,9 @@ async function runQueue() {
   removing = false; rqCancel = false; rq = []; pq = null; progHide();
   const top = topOnly(ok);
   if (top.length) { removeNodes(top); setTimeout(refreshDrives, 600); }
-  const size = fmt(sumOf(top)), what = kind === 'trash' ? 'moved to Recycle Bin' : 'permanently deleted';
+  const size = fmt(sumOf(top)), what = kinds.size > 1 ? 'removed (safe ones permanently, costly ones to the Recycle Bin)' : (kinds.has('trash') || (!kinds.size && kind === 'trash')) ? 'moved to Recycle Bin' : 'permanently deleted';
   if (cancelled) return toast(`Cancelled: ${ok.length} items ${what} (${size}); the rest was left untouched`, true);
-  if (!fail.length) toast(`${ok.length} items ${what} · ${size}` + (kind === 'trash' ? ' (space is freed when the bin is emptied)' : ' freed'));
+  if (!fail.length) toast(`${ok.length} items ${what} · ${size}` + (kinds.has('trash') ? ' (space is freed when the bin is emptied)' : ' freed'));
   else {
     toast(`${ok.length} items ${what}, ${fail.length} items could not be deleted: ${fail[0]}`, true);
     if (fail.some(m => /admin rights/.test(m)) && await confirmBox('Admin rights required', 'These files are in a protected folder (e.g. Program Files).', 'Relaunch the app as administrator to delete them. Windows will ask for permission once.', 'Relaunch as administrator now?')) native.relaunchAdmin();

@@ -7,12 +7,13 @@ use std::os::windows::fs::{FileExt, OpenOptionsExt};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering::Relaxed};
 use std::sync::Mutex;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, UNIX_EPOCH};
 
 struct Node {
     name: String,
     size: u64,
     file: bool,
+    m: u64, // last modified (unix seconds); for a folder, its newest child
     kids: Vec<Node>,
 }
 
@@ -40,7 +41,8 @@ fn walk(dir: &Path, name: String) -> Node {
             } else if let Ok(m) = e.metadata() {
                 FILES.fetch_add(1, Relaxed);
                 if m.len() > 0 {
-                    kids.push(Node { name: n, size: m.len(), file: true, kids: vec![] });
+                    let mt = m.modified().ok().and_then(|t| t.duration_since(UNIX_EPOCH).ok()).map_or(0, |d| d.as_secs());
+                    kids.push(Node { name: n, size: m.len(), file: true, m: mt, kids: vec![] });
                 }
             }
         }
@@ -48,7 +50,8 @@ fn walk(dir: &Path, name: String) -> Node {
     let sub: Vec<Node> = subdirs.into_par_iter().map(|(p, n)| walk(&p, n)).collect();
     kids.extend(sub.into_iter().filter(|k| k.size > 0));
     let size = kids.iter().map(|k| k.size).sum();
-    Node { name, size, file: false, kids }
+    let m = kids.iter().map(|k| k.m).max().unwrap_or(0);
+    Node { name, size, file: false, m, kids }
 }
 
 // ---------- mft mode ----------
@@ -56,6 +59,7 @@ struct Entry {
     parent: u64,
     name: String,
     size: u64,
+    m: u64,
     dir: bool,
 }
 
@@ -105,7 +109,7 @@ fn parse_record(rec: &mut [u8]) -> (Option<Entry>, Option<(u64, u64)>) {
 
 fn parse_base(rec: &[u8], flags: u16) -> Option<Entry> {
     let mut off = u16le(rec, 0x14) as usize;
-    let (mut parent, mut name, mut ns, mut size) = (0u64, None::<String>, 255u8, 0u64);
+    let (mut parent, mut name, mut ns, mut size, mut mt) = (0u64, None::<String>, 255u8, 0u64, 0u64);
     while off + 16 <= rec.len() {
         let ty = u32le(rec, off);
         if ty == 0xFFFF_FFFF { break; }
@@ -113,7 +117,13 @@ fn parse_base(rec: &[u8], flags: u16) -> Option<Entry> {
         if len < 16 || off + len > rec.len() { break; }
         let nonres = rec[off + 8] != 0;
         let nlen = rec[off + 9];
-        if ty == 0x30 && !nonres {
+        if ty == 0x10 && !nonres {
+            // $STANDARD_INFORMATION: +0x08 modification time (FILETIME, 100 ns since 1601)
+            let c = off + u16le(rec, off + 0x14) as usize;
+            if c + 0x10 <= rec.len() {
+                mt = (u64le(rec, c + 8) / 10_000_000).saturating_sub(11_644_473_600);
+            }
+        } else if ty == 0x30 && !nonres {
             let c = off + u16le(rec, off + 0x14) as usize;
             if c + 0x42 <= rec.len() {
                 let n = rec[c + 0x41];
@@ -130,7 +140,7 @@ fn parse_base(rec: &[u8], flags: u16) -> Option<Entry> {
         }
         off += len;
     }
-    Some(Entry { parent, name: name?, size, dir: flags & 2 != 0 })
+    Some(Entry { parent, name: name?, size, m: mt, dir: flags & 2 != 0 })
 }
 
 fn runs(rec: &[u8]) -> Option<(Vec<(u64, u64)>, u64)> {
@@ -212,11 +222,12 @@ fn scan_mft(drive: char) -> Result<Node, String> {
     fn build(i: usize, ents: &[Option<Entry>], kids: &[Vec<u32>], depth: u32) -> Node {
         let e = ents[i].as_ref().unwrap();
         if !e.dir || depth > 200 {
-            return Node { name: e.name.clone(), size: e.size, file: true, kids: vec![] };
+            return Node { name: e.name.clone(), size: e.size, file: true, m: e.m, kids: vec![] };
         }
         DIRS.fetch_add(1, Relaxed);
         let k: Vec<Node> = kids[i].iter().map(|&c| build(c as usize, ents, kids, depth + 1)).filter(|n| n.size > 0).collect();
-        Node { name: e.name.clone(), size: k.iter().map(|n| n.size).sum(), file: false, kids: k }
+        let m = k.iter().map(|n| n.m).max().unwrap_or(0);
+        Node { name: e.name.clone(), size: k.iter().map(|n| n.size).sum(), file: false, m, kids: k }
     }
     if ents.len() <= 5 || ents[5].is_none() { return Err("no root".into()); }
     let mut root = build(5, &ents, &kids, 0);
@@ -226,19 +237,21 @@ fn scan_mft(drive: char) -> Result<Node, String> {
 
 // ---------- common ----------
 fn prune(n: Node, min: u64) -> Value {
+    // "m" is written only when known (keeps the output small)
+    let with_m = |mut v: Value, m: u64| { if m > 0 { v["m"] = json!(m); } v };
     if n.file {
-        return json!({"n": n.name, "s": n.size, "f": 1});
+        return with_m(json!({"n": n.name, "s": n.size, "f": 1}), n.m);
     }
-    let (mut keep, mut rest, mut rest_n) = (Vec::new(), 0u64, 0u64);
+    let (mut keep, mut rest, mut rest_n, mut rest_m) = (Vec::new(), 0u64, 0u64, 0u64);
     for k in n.kids {
-        if k.size >= min { keep.push(k); } else { rest += k.size; rest_n += 1; }
+        if k.size >= min { keep.push(k); } else { rest += k.size; rest_n += 1; rest_m = rest_m.max(k.m); }
     }
     keep.sort_by(|a, b| b.size.cmp(&a.size));
     let mut c: Vec<Value> = keep.into_iter().map(|k| prune(k, min)).collect();
     if rest > 0 {
-        c.push(json!({"n": format!("{} small items", rest_n), "s": rest, "f": 1, "o": 1}));
+        c.push(with_m(json!({"n": format!("{} small items", rest_n), "s": rest, "f": 1, "o": 1}), rest_m));
     }
-    json!({"n": n.name, "s": n.size, "c": c})
+    with_m(json!({"n": n.name, "s": n.size, "c": c}), n.m)
 }
 
 fn main() {

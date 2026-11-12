@@ -13,7 +13,7 @@ function drives() {
   return out;
 }
 
-// Tree: {n: name, s: bytes, c?: children}. Small items are grouped under "small items".
+// Tree: {n: name, s: bytes, c?: children, m?: last modified (unix seconds; for a folder, its newest file)}. Small items are grouped under "small items".
 async function scan(root, onProgress, signal) {
   const st = { files: 0, dirs: 0, bytes: 0, cur: root };
   let tick = Date.now();
@@ -39,14 +39,14 @@ async function scan(root, onProgress, signal) {
       if (e.isDirectory()) jobs.push(walk(full, e.name));
       else jobs.push((async () => {
         await acquire();
-        try { const x = await fs.promises.lstat(full); st.files++; st.bytes += x.size; return { n: e.name, s: x.size, f: 1 }; }
+        try { const x = await fs.promises.lstat(full); st.files++; st.bytes += x.size; return { n: e.name, s: x.size, f: 1, m: Math.floor(x.mtimeMs / 1000) }; }
         catch { return null; } finally { release(); }
       })());
       if (Date.now() - tick > 80) { tick = Date.now(); onProgress(st); await new Promise(r => setImmediate(r)); }
     }
     for (const k of await Promise.all(jobs)) if (k && k.s > 0) kids.push(k);
-    const total = kids.reduce((a, k) => a + k.s, 0);
-    return { n: name, s: total, c: kids };
+    const total = kids.reduce((a, k) => a + k.s, 0), m = kids.reduce((a, k) => Math.max(a, k.m || 0), 0);
+    return m ? { n: name, s: total, c: kids, m } : { n: name, s: total, c: kids };
   }
 
   const tree = await walk(root, root);
@@ -56,13 +56,13 @@ async function scan(root, onProgress, signal) {
 // Merges items below the size threshold into a single "small items" leaf; caps the node count.
 function prune(node, min) {
   if (!node.c) return node;
-  const keep = []; let rest = 0, restN = 0;
+  const keep = []; let rest = 0, restN = 0, restM = 0;
   for (const k of node.c) {
-    if (k.s >= min) keep.push(prune(k, min)); else { rest += k.s; restN++; }
+    if (k.s >= min) keep.push(prune(k, min)); else { rest += k.s; restN++; restM = Math.max(restM, k.m || 0); }
   }
-  if (rest > 0) keep.push({ n: `${restN.toLocaleString('en-US')} small items`, s: rest, f: 1, o: 1 });
+  if (rest > 0) keep.push({ n: `${restN.toLocaleString('en-US')} small items`, s: rest, f: 1, o: 1, ...(restM ? { m: restM } : {}) });
   keep.sort((a, b) => b.s - a.s);
-  return { n: node.n, s: node.s, c: keep };
+  return { n: node.n, s: node.s, c: keep, ...(node.m ? { m: node.m } : {}) };
 }
 
 module.exports = { drives, scan, prune };
