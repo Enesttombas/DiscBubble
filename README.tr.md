@@ -34,7 +34,8 @@ Gerekenler: Windows, Node.js ve tarayıcı için Rust (`cargo`).
 ```
 npm install
 cd scanner-rs && cargo build --release && cd ..
-mkdir bin && copy scanner-rs	argeteleaseubblescan.exe binnpm start
+mkdir bin && copy scanner-rs	arget
+eleaseubblescan.exe binnpm start
 ```
 
 ## Kullanım
@@ -50,4 +51,4 @@ Bir sürücü seç (hızlı `mft` taraması için yönetici olarak yeniden başl
 
 ## Lisans
 
-ISC (bkz. `package.json`).
+[ISC](LICENSE).

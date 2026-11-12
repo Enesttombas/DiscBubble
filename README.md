@@ -51,4 +51,4 @@ Pick a drive (or relaunch as administrator for the fast `mft` scan), click bubbl
 
 ## License
 
-ISC (see `package.json`).
+[ISC](LICENSE).
