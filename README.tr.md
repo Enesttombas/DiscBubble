@@ -1,9 +1,9 @@
 <p align="center"><img src="docs/media/banner.png" width="100%" alt="DiscBubble: Windows disk alanının nereye gittiğini baloncuklarla gör"></p>
 <p align="center"><a href="README.md">English</a> · <b>Türkçe</b></p>
 
-DiscBubble, Windows diskini dolduran şeyleri yakınlaştırılabilir baloncuklar olarak gösterir, neyin silinmesinin güvenli olduğunu önerir ve kullanılmayan sürücü (driver) paketlerini temizler. Kendi bilgisayarım için yaptığım kişisel bir araçtır.
+Windows 11'in depolama ve yer açma sayfası bana çok basit ve çok yavaş geldi; kendi ihtiyacım için küçük bir uygulama yaptım. DiscBubble diski baloncuklarla gösterir: bir klasör ya da dosya ne kadar yer kaplıyorsa balonu o kadar büyüktür. Her şeyi kategorilere ayırır ve neyi silebileceğini gerekçesiyle önerir.
 
-<p align="center"><img src="docs/media/hero.gif" width="860" alt="DiscBubble bir demo diski tarar, güvenlik renklerine geçer, bir modeli silmenin bedelini gösterir ve önerilen silmeler listesini açar"></p>
+<p align="center"><img src="docs/media/tour.gif" width="860" alt="DiscBubble turu, gerçek bir sürücüde: her klasörü balon olarak gör, dosya türüne göre renklendir, klasörün içine gir, silme önerilerini ve eski sürücü listesini aç"></p>
 
 ## Ne yapar
 
@@ -42,18 +42,10 @@ Arayüz İngilizcedir; kademe ve risk adları arayüzdeki gibi yazıldı.
 
 ## Nasıl çalışır
 
-<p align="center"><img src="docs/media/architecture.svg" width="860" alt="Mimari: public/ arayüzü, Electron main.js, Rust bubblescan tarayıcısı, sürücü ve silme yardımcıları"></p>
+<p align="center"><img src="docs/media/how-it-works.svg" width="860" alt="Three steps: the Rust scanner reads the drive, rules sort folders and files, the app shows bubbles and suggestions"></p>
 
-- `scanner-rs/src/main.rs` (`bubblescan`) iki moddur. `walk` rayon ile `read_dir` kullanır. `mft` bir sürücünün ham NTFS `$MFT` kaydını okur, yönetici hakkı ister; olmazsa uygulama `walk`'a düşer.
-- Tarayıcı budanmış bir JSON ağacı döndürür (`prune()` küçük öğeleri birleştirir). `main.js` onu çalıştırıp sonucu `public/app.js`'e verir.
-- `scanner.js` düz bir Node tarayıcısıdır (uygulama için sürücüleri de listeler, kıyas ölçümü onunla yapılır). `server.js` + `Disk-Bubble.cmd` eski tarayıcı kipi sunucusudur; güncel arayüz Electron köprüsüyle (`preload.js` içindeki `window.native`) konuşur ve ona bağlı değildir.
-- Yaklaşım, mevcut disk araçlarının dosya tablosunu nasıl okuduğuna bakılarak şekillendi; onları REA tersine mühendislik aracıyla inceleyip fikri Rust tarayıcıda yeniden uyguladım.
-
-## Sayılar
-
-<p align="center"><img src="docs/media/bench.svg" width="860" alt="Çubuk grafik: 60.000 dosya için Node tarayıcı 11,5 saniye, Rust walk modu 0,124 saniye"></p>
-
-`node bench/scan-bench.cjs 7 60000` ile 2026-10-20'de ölçüldü (Windows 11, 32 mantıksal CPU): 60.000 küçük dosyalık yapay ağaçta 7 koşunun medyanı; Node `scanner.js` 11,51 sn, `bubblescan --mode walk` 0,124 sn (süreç başlatma ve JSON yazma dahil). Ham veri: `docs/media/data/scan-bench.json`. `mft` modu ölçülmedi (yönetici hakkı ister).
+- Küçük bir Rust tarayıcısı (`bubblescan`) sürücüyü okur ve boyutlarıyla bir klasör ağacı döndürür. Yönetici hakkı varsa NTFS dosya tablosunu doğrudan okur (`mft` modu); yoksa klasörleri tek tek gezer (`walk` modu).
+- Electron uygulaması bu ağacı baloncuk olarak çizer, sabit kurallarla renklendirir ve öneri listesini aynı kurallardan çıkarır.
 
 ## Hızlı başlangıç
 

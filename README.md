@@ -1,9 +1,9 @@
 <p align="center"><img src="docs/media/banner.png" width="100%" alt="DiscBubble: see where your Windows disk space went, as bubbles"></p>
 <p align="center"><b>English</b> · <a href="README.tr.md">Türkçe</a></p>
 
-DiscBubble shows what fills a Windows disk as zoomable bubbles, suggests what is safe to delete, and cleans up unused driver packages. It is a personal tool built for my own machine.
+The storage page in Windows 11 felt too basic and too slow for me, so I built a small app for my own use. DiscBubble shows a disk as bubbles: the more space a folder or file takes, the bigger its bubble. It sorts everything into categories and suggests what you can delete, with a reason for each suggestion.
 
-<p align="center"><img src="docs/media/hero.gif" width="860" alt="DiscBubble scans a demo drive, switches to the safety colors, shows what deleting a model costs and opens the suggested deletions list"></p>
+<p align="center"><img src="docs/media/tour.gif" width="860" alt="DiscBubble tour on a real drive: see every folder as a bubble, recolor by file type, zoom into a folder, open the deletion suggestions and the old drivers list"></p>
 
 ## What it does
 
@@ -40,18 +40,10 @@ The **Suggested deletions** badge totals Safe and Re-downloadable space separate
 
 ## How it works
 
-<p align="center"><img src="docs/media/architecture.svg" width="860" alt="Architecture: UI in public/, Electron main.js, Rust bubblescan scanner, driver and delete helpers"></p>
+<p align="center"><img src="docs/media/how-it-works.svg" width="860" alt="Three steps: the Rust scanner reads the drive, rules sort folders and files, the app shows bubbles and suggestions"></p>
 
-- `scanner-rs/src/main.rs` (`bubblescan`) has two modes. `walk` uses `read_dir` with rayon. `mft` reads the raw NTFS `$MFT` of a whole drive and needs administrator rights; if it fails, the app falls back to `walk`.
-- The scanner returns a pruned JSON tree (`prune()` merges small items). `main.js` runs it and passes the result to `public/app.js`.
-- `scanner.js` is a plain Node scanner (also lists drives for the app and is what the benchmark compares against). `server.js` + `Disk-Bubble.cmd` are an older browser-mode server; the current UI talks to the Electron bridge (`window.native` in `preload.js`) and is not wired to it.
-- The approach was informed by looking at how existing disk tools read the file table; I studied them with the REA reverse-engineering tool and re-implemented the idea in the Rust scanner.
-
-## Numbers
-
-<p align="center"><img src="docs/media/bench.svg" width="860" alt="Bar chart: Node scanner 11.5 seconds versus Rust walk mode 0.124 seconds for 60,000 files"></p>
-
-Measured with `node bench/scan-bench.cjs 7 60000` on 2026-10-20 (Windows 11, 32 logical CPUs): median of 7 runs on a synthetic tree of 60,000 small files, Node `scanner.js` 11.51 s versus `bubblescan --mode walk` 0.124 s (includes process start and JSON write). Raw data: `docs/media/data/scan-bench.json`. The `mft` mode was not measured (needs administrator rights).
+- A small Rust scanner (`bubblescan`) reads the drive and returns a folder tree with sizes. With administrator rights it reads the NTFS file table directly (`mft` mode); without them it walks the folders (`walk` mode).
+- The Electron app draws that tree as bubbles, colors it by fixed rules and builds the suggestion list from the same rules.
 
 ## Quick start
 
