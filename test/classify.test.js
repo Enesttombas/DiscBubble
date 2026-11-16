@@ -160,3 +160,43 @@ test('age sentence', () => {
   assert.equal(C.ageText(NOW - 800 * DAY, NOW), 'untouched for 2 years');
   assert.equal(C.ageText(0, NOW), '');
 });
+
+// Found on a real C: scan (2026-11-16); paths here are fake.
+test('temp-like names inside Windows stay system files, except the known cleanup folders', () => {
+  const r = run(D('C:\\', [D('Windows', [
+    D('WinSxS', [D('Temp', [D('InFlight', [F('a', 200 * MB)])]), F('x.dll', 3 * GB)]),
+    D('assembly', [D('NativeImages_v4', [D('Temp', [F('t', 60 * MB)])])]),
+    D('System32', [D('config', [F('SOFTWARE.LOG1', 80 * MB)]), F('k.dll', GB)]),
+    D('Temp', [F('t.bin', 60 * MB)]), D('Prefetch', [F('p.pf', 60 * MB)]), D('Logs', [F('cbs.log', 60 * MB)]),
+    F('MEMORY.DMP', 2 * GB),
+  ])]));
+  for (const p of ['Windows\\WinSxS\\Temp', 'Windows\\WinSxS\\Temp\\InFlight', 'Windows\\assembly\\NativeImages_v4\\Temp', 'Windows\\System32\\config\\SOFTWARE.LOG1'])
+    assert.equal(find(r, p).sf, 'never', p);
+  for (const p of ['Windows\\Temp', 'Windows\\Prefetch', 'Windows\\Logs', 'Windows\\MEMORY.DMP'])
+    assert.equal(find(r, p).sf, 'safe', p);
+  assert.ok(!C.suggest(r).some(s => /winsxs|assembly|system32/.test(s.n.lp)), 'nothing under WinSxS, assembly or System32 is suggested');
+});
+
+test('a Python installation is a program, not a virtual environment', () => {
+  const py = D('pythoncore-3.14-64', [
+    D('Lib', [D('site-packages', [F('big.pyd', 5 * GB)])]), D('Scripts', [F('pip.exe', MB)]),
+    D('DLLs', [F('_ssl.pyd', 20 * MB)]), D('include', [F('Python.h', MB)]), F('python.exe', MB),
+  ]);
+  const venv = D('env', [D('Lib', [D('site-packages', [F('big.pyd', GB)])]), D('Scripts', [F('python.exe', MB)])], ago(90));
+  const r = run(D('C:\\', [D('Users', [D('me', [D('AppData', [D('Local', [D('Python', [py])])]), D('proj', [venv])])])]));
+  const n = find(r, 'Users\\me\\AppData\\Local\\Python\\pythoncore-3.14-64');
+  assert.equal(n.sf, 'prog');
+  assert.ok(!C.suggest(r).some(s => s.n === n), 'the interpreter is not suggested for deletion');
+  assert.equal(find(r, 'Users\\me\\proj\\env').sf, 'cost', 'a real environment without pyvenv.cfg is still recognized');
+});
+
+test('tmp and temp folders inside personal folders are personal data, AppData\\Local\\Temp is still green', () => {
+  const r = run(D('C:\\', [D('Users', [D('me', [
+    D('Documents', [D('work', [D('tmp', [F('notes.bin', 400 * MB)]), D('temp', [F('draft.bin', 400 * MB)])])]),
+    D('AppData', [D('Local', [D('Temp', [F('t.bin', 400 * MB)])])]),
+  ])])]));
+  assert.equal(find(r, 'Users\\me\\Documents\\work\\tmp').sf, 'keep');
+  assert.equal(find(r, 'Users\\me\\Documents\\work\\temp').sf, 'keep');
+  assert.equal(find(r, 'Users\\me\\AppData\\Local\\Temp').sf, 'safe');
+  assert.deepEqual(C.suggest(r).map(s => s.n.data.n), ['Temp']);
+});

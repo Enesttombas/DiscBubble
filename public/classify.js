@@ -137,6 +137,7 @@
     if (!kids) return false;
     const k = new Map(kids.map(c => [c.n.toLowerCase(), c]));
     if (k.has('pyvenv.cfg')) return true;
+    if (k.has('python.exe') || k.has('dlls')) return false; // a full Python installation, not an environment
     const lib = k.get('lib');
     return !!(lib && lib.c && lib.c.some(c => c.n.toLowerCase() === 'site-packages') && (k.has('scripts') || k.has('bin')));
   };
@@ -186,7 +187,11 @@
     const nm = name.toLowerCase(), ps = pc && pc.sig;
     if (ps && ps.kind === 'leaf') return { grp: pc.grp, sig: ps, inh: true, src: pc.src };
     let own = sigOf(nm, lp, isDir, kids);
-    if (own && own.kind === 'container' && pc && pc.grp === 'system' && !ps) own = null; // generic "cache" names inside system stay do-not-touch
+    // Inside system folders a name alone proves nothing (WinSxS\Temp, registry .LOG files): only the known cleanup spots keep their signature.
+    if (own && pc && pc.grp === 'system' && !ps && own !== SIG.wudl && own !== SIG.winlog
+      && !/^[a-z]:\\windows\\(temp|prefetch|memory\.dmp)$/.test(lp)) own = null;
+    // A folder named tmp or temp inside a personal folder may hold the user's own work.
+    if (own === SIG.temp && pc && pc.grp === 'user' && !ps) own = null;
     if (own) return { grp: own.id === 'unrec' ? 'other' : 'temp', sig: own, inh: false, src: name };
     if (ps && ps.kind === 'container') {
       const sig = isDir ? SIG.unrec : MODEL_EXT.has(extOf(nm)) ? SIG.loosemodel : SIG.loosefile;
