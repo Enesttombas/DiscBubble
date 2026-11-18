@@ -67,7 +67,7 @@ function setFocus(d, animate = true) {
   const merged = new Set([...cands, ...candidates(d)]);
   cands = [...merged].sort((a, b) => a.depth - b.depth);
   focus = d;
-  from = view.slice(); to = [d.x, d.y, d.r];
+  from = view.slice(); to = [d.x, d.y, d.r || 1];
   zoomT0 = performance.now();
   if (!animate) { view = to.slice(); from = null; cands = candidates(d); }
   renderSide(); renderCrumbs();
@@ -76,8 +76,9 @@ function setFocus(d, animate = true) {
 
 function build(tree) {
   treeData = tree;
-  const h = d3.hierarchy(tree, d => d.c).sum(d => (d.c && d.c.length ? 0 : d.s)).sort((a, b) => b.value - a.value);
-  d3.pack().size([1000, 1000]).padding(3)(h);
+  const h = d3.hierarchy(tree, d => d.c).sum(d => (d.c ? 0 : d.s)).sort((a, b) => b.value - a.value);
+  if (h.value) d3.pack().size([1000, 1000]).padding(3)(h);
+  else h.each(n => { n.x = n.y = 500; n.r = n.parent ? 0 : 500; });
   h.each(n => { n.dl = Math.min(n.depth, 3) * 0.07 + (((n.x * 7 + n.y * 13) % 97) / 97) * 0.35; n.hv = 0; });
   Classify.annotate(h, { now: Date.now() / 1000 }); // lp, grp, cat, sf, why
   stats = { grp: {}, sub: {}, safe: {} };
@@ -87,7 +88,10 @@ function build(tree) {
     stats.sub[n.cat.id] = (stats.sub[n.cat.id] || 0) + n.value;
     stats.grp[n.grp] = (stats.grp[n.grp] || 0) + n.value;
   });
-  h.eachAfter(n => { n.uni = !n.children ? n.sf : n.children.every(c => c.uni === n.sf) ? n.sf : null; });
+  h.eachAfter(n => {
+    n.uni = !n.children ? n.sf : n.children.every(c => c.uni === n.sf) ? n.sf : null;
+    n.logical = n.data.c ? (n.children || []).reduce((sum, c) => sum + c.logical, 0) : (n.data.l ?? n.value);
+  });
   h.eachAfter(n => {
     if (!n.children) { n.cb = { [n.cat.id]: n.value }; return; }
     n.cb = {};
@@ -156,7 +160,7 @@ let fullTree = null;
 function soloTree() {
   const keep = n => {
     if (n.data.o) return null;
-    if (!n.children) return matchF(n) ? { n: n.data.n, s: n.data.s } : null;
+    if (!n.children) return matchF(n) ? { ...n.data } : null;
     const c = n.children.map(keep).filter(Boolean);
     return c.length ? { n: n.data.n, s: c.reduce((t, x) => t + x.s, 0), c } : null;
   };
@@ -398,13 +402,14 @@ function renderSide() {
   if (sideTab === 'big') return renderRows(bigFiles(), 'Largest files', grpSub);
   if (sideTab === 'sug') return renderSug();
   if (sideTab === 'drv') return drv ? renderDrv() : loadDrivers();
-  $('sideTitle').textContent = focus.data.n + ' · ' + fmt(focus.value);
+  $('sideTitle').textContent = focus.data.n + ' · ' + fmt(focus.value) + ' on disk';
   const ul = $('list'); ul.innerHTML = '';
   sideNodes = (focus.children || []).slice(0, 18);
   sel = new Set([...sel].filter(n => sideNodes.includes(n)));
   sideNodes.forEach((c, i) => {
     const col = c.children ? tintOf(c) : colorOf(c);
-    const li = mkRow(ul, c, i, `<div class="fill" style="width:${(c.value / focus.value * 100).toFixed(1)}%;background:${col}"></div>` +
+    const pct = focus.value ? c.value / focus.value * 100 : 0;
+    const li = mkRow(ul, c, i, `<div class="fill" style="width:${pct.toFixed(1)}%;background:${col}"></div>` +
       `<div class="row"><span class="nm"></span><span class="sz">${fmt(c.value)}</span></div>`);
     li.querySelector('.nm').textContent = c.data.n;
   });
@@ -413,8 +418,9 @@ function renderSide() {
 
 function showTip(d, e) {
   const t = $('tip');
-  const pct = d.parent ? (d.value / d.parent.value * 100).toLocaleString('en-US', { maximumFractionDigits: 1 }) + '% of parent folder' : '';
-  t.innerHTML = `<b>${d.data.n.replace(/</g, '&lt;')}</b><em>${fmt(d.value)}</em> ${pct ? '· ' + pct : ''}` +
+  const pct = d.parent?.value ? (d.value / d.parent.value * 100).toLocaleString('en-US', { maximumFractionDigits: 1 }) + '% of parent folder' : '';
+  t.innerHTML = `<b>${d.data.n.replace(/</g, '&lt;')}</b><em>${fmt(d.value)} on disk</em> ${pct ? '· ' + pct : ''}` +
+    (d.logical !== d.value ? `<small>File size: ${fmt(d.logical)}</small>` : '') +
     `<small class="grp"><i style="background:${GRP[d.grp].col}"></i>${GRP[d.grp].name} · ${GRP[d.grp].tag}</small>` +
     `<small class="grp"><i style="background:${SAFE[d.sf].col}"></i>${SAFE[d.sf].name} · ${SAFE[d.sf].risk}</small>` +
     (d.why && d.sf !== 'never' ? `<small>${esc(effOf(d.why))}</small>` : '') +
@@ -789,7 +795,8 @@ async function startScan(p) {
   try { localStorage.setItem('hb-files-' + p, r.files); } catch {}
   $('sbar').classList.remove('ind'); $('sbar').firstChild.style.transform = 'scaleX(1)'; $('sPct').textContent = '100%';
   countTo(r.files);
-  $('stats').textContent = `${r.files.toLocaleString('en-US')} files · ${r.dirs.toLocaleString('en-US')} folders · ${(r.ms / 1000).toFixed(1)} s`;
+  const sizeNote = r.sizeFallbacks ? ` · Disk size unavailable for ${r.sizeFallbacks.toLocaleString('en-US')} files` : '';
+  $('stats').textContent = `${r.files.toLocaleString('en-US')} files · ${r.dirs.toLocaleString('en-US')} folders · ${(r.ms / 1000).toFixed(1)} s${sizeNote}`;
   setTimeout(() => { $('scan').classList.add('hidden'); orb.stop(); build(r.tree); }, 400);
 }
 // Show only the last folder name instead of the long path, middle-truncated if too long

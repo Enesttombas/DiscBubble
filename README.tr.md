@@ -49,6 +49,8 @@ Arayüz İngilizcedir; kademe ve risk adları arayüzdeki gibi yazıldı.
 
 ## Hızlı başlangıç
 
+Taşınabilir Windows x64 uygulamasını [GitHub Releases](https://github.com/Enesttombas/DiscBubble/releases/latest) sayfasından indir veya kaynak koddan derle.
+
 Gerekenler: Windows, Node.js ve tarayıcı için Rust (`cargo`).
 
 ```
@@ -61,6 +63,8 @@ npm start
 ## Kullanım
 
 Bir sürücü seç (hızlı `mft` taraması için yönetici olarak yeniden başlat), baloncuklara tıklayıp yakınlaş, sağ üstten renk modunu değiştir, temizlik için **Suggested deletions** ya da **Drivers** sekmesini aç.
+
+Seyrek ve NTFS sıkıştırmalı dosyaların baloncukları, diskte ayrılmış alana göre boyutlanır. Dosya boyutu farklıysa üzerine gelince ayrıca görünür. `walk` modunda normal dosyalar mantıksal boyutuyla sayılır ve sabit bağlantılar birden fazla kez sayılabilir.
 
 ## Sınırlar
 

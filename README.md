@@ -47,6 +47,8 @@ The **Suggested deletions** badge totals Safe and Re-downloadable space separate
 
 ## Quick start
 
+Download the portable Windows x64 app from [GitHub Releases](https://github.com/Enesttombas/DiscBubble/releases/latest), or build from source.
+
 Requirements: Windows, Node.js, and Rust (`cargo`) for the scanner.
 
 ```
@@ -59,6 +61,8 @@ npm start
 ## Usage
 
 Pick a drive (or relaunch as administrator for the fast `mft` scan), click bubbles to zoom, switch the color mode at the top right, and open **Suggested deletions** or the **Drivers** tab to clean up.
+
+Bubble sizes use the allocated bytes of sparse and NTFS-compressed files. When the logical file size differs, it appears in the tooltip. In `walk` mode, ordinary files are counted by their logical size and hard links can be counted more than once.
 
 ## Limits
 

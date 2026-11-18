@@ -1,6 +1,6 @@
 {
   "name": "disk-bubble",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Windows disk space visualizer with animated bubble (circle packing) view, cleanup suggestions and driver store analysis",
   "main": "main.js",
   "scripts": {
